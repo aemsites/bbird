@@ -107,8 +107,8 @@ let auth0 = null;
 async function initAuth0() {
   const { createAuth0Client } = window.auth0;
   auth0 = await createAuth0Client({
-    domain: 'dev-2qx88mromlr8mcmw.us.auth0.com',
-    clientId: 'OLU7Sl4iuBD9A0AtEpGIHnFsKvhqWln7',
+    domain: 'dev-moq43cn106jxt2mm.us.auth0.com',
+    clientId: 'P3icLdZ89e4sdIjht9oHxFpfeeMOtMkY',
     redirect_uri: window.location.origin,
   });
 
