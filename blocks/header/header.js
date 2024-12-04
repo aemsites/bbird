@@ -134,7 +134,7 @@ async function initAuth0() {
   }
 
   const loginBtn = document.querySelector('.nav-tools a[title="Login"]');
-  const logoutBtn = document.querySelector('.nav-tools a[title="Logut"]');
+  const logoutBtn = document.querySelector('.nav-tools a[title="Logout"]');
 	
   loginBtn.addEventListener("click", async e => {
 		e.preventDefault();
