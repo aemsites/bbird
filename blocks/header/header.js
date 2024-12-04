@@ -103,14 +103,83 @@ function toggleMenu(nav, navSections, forceExpanded = null) {
   }
 }
 
+let auth0 = null;
+async function initAuth0() {
+  const { createAuth0Client } = window.auth0;
+  auth0 = await createAuth0Client({
+    domain: 'dev-2qx88mromlr8mcmw.us.auth0.com',
+    clientId: 'OLU7Sl4iuBD9A0AtEpGIHnFsKvhqWln7',
+    redirect_uri: window.location.origin,
+  });
+
+
+  const isAuthenticated = await auth0.isAuthenticated();
+
+  if (isAuthenticated) {
+    updateLoginState();
+  } else {
+    const query = window.location.search;
+    if (window.location.search.includes('code=') && window.location.search.includes('state=')) {
+      try {
+        await auth0.handleRedirectCallback();
+        const user = await auth0.getUser();
+        console.log('User:', user);
+        updateLoginState();
+        window.history.replaceState({}, document.title, '/');
+      } catch (err) {
+        console.error('Error handling redirect callback:', err);
+      }
+    }
+    
+  }
+
+  const loginBtn = document.querySelector('.nav-tools a[title="Login"]');
+  const logoutBtn = document.querySelector('.nav-tools a[title="Logut"]');
+	
+  loginBtn.addEventListener("click", async e => {
+		e.preventDefault();
+		await auth0.loginWithRedirect({
+      redirect_uri: window.location.origin,
+      });
+	});
+
+	logoutBtn.addEventListener("click", async e => {
+		e.preventDefault();
+		await auth0.logoutWithRedirect({
+      redirect_uri: window.location.origin,
+      });
+	});
+}
+
+async function updateLoginState() {
+  const user = await auth0.getUser();
+  const loginBtn = document.querySelector('.nav-tools a[title="Login"]');
+  const logoutBtn = document.querySelector('.nav-tools a[title="Logout"]');
+
+  if (user) {
+    loginBtn.textContent = `Welcome, ${user.nickname || user.name || user.email}`;
+
+    loginBtn.style.display = 'block';
+    logoutBtn.style.display = 'block';
+
+    logoutBtn.addEventListener('click', async () => {
+      await auth0.logout({ returnTo: window.location.origin });
+    });
+  } else {
+    loginBtn.style.display = 'block';
+    logoutBtn.style.display = 'none';
+  }
+}
+
 /**
  * loads and decorates the header, mainly the nav
  * @param {Element} block The header block element
  */
 export default async function decorate(block) {
+
   // load nav as fragment
   const navMeta = getMetadata('nav');
-  const navPath = navMeta ? new URL(navMeta, window.location).pathname : '/nav';
+  const navPath = navMeta ? new URL(navMeta, window.location).pathname : '/drafts/nav';
   const fragment = await loadFragment(navPath);
 
   // decorate nav DOM
@@ -163,4 +232,6 @@ export default async function decorate(block) {
   navWrapper.className = 'nav-wrapper';
   navWrapper.append(nav);
   block.append(navWrapper);
+
+  await initAuth0();
 }
