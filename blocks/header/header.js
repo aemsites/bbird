@@ -173,6 +173,8 @@ async function updateLoginState() {
     lgOutBtnA.classList.add('button');
     lgOutBtnA.title = 'Logout';
     lgOutBtnA.textContent = 'Logout';
+    lgOutBtnA.style.display = 'block';
+    lgOutBtnA.href = '/';
 
     document.querySelector('.section.nav-tools > div.default-content-wrapper').append(lgOutBtnP);
 
