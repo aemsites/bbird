@@ -109,7 +109,9 @@ async function initAuth0() {
   auth0 = await createAuth0Client({
     domain: 'dev-moq43cn106jxt2mm.us.auth0.com',
     clientId: 'P3icLdZ89e4sdIjht9oHxFpfeeMOtMkY',
-    redirect_uri: window.location.origin,
+    authorizationParams: {
+      redirect_uri: window.location.origin,
+    },
   });
 
   const isAuthenticated = await auth0.isAuthenticated();
