@@ -146,8 +146,10 @@ async function initAuth0() {
   /**
   logoutBtn.addEventListener('click', async (e) => {
     e.preventDefault();
-    await auth0.logoutWithRedirect({
-      redirect_uri: window.location.origin,
+    await auth0.logout({
+      logoutParams: {
+        returnTo: window.location.origin
+      }
     });
   });
     * */
