@@ -134,7 +134,7 @@ async function initAuth0() {
   }
 
   const loginBtn = document.querySelector('.nav-tools a[title="Login"]');
-  const logoutBtn = document.querySelector('.nav-tools a[title="Logout"]');
+  // const logoutBtn = document.querySelector('.nav-tools a[title="Logout"]');
 
   loginBtn.addEventListener('click', async (e) => {
     e.preventDefault();
@@ -143,31 +143,45 @@ async function initAuth0() {
     });
   });
 
+  /**
   logoutBtn.addEventListener('click', async (e) => {
     e.preventDefault();
     await auth0.logoutWithRedirect({
       redirect_uri: window.location.origin,
     });
   });
+    * */
 }
 
 async function updateLoginState() {
   const user = await auth0.getUser();
   const loginBtn = document.querySelector('.nav-tools a[title="Login"]');
-  const logoutBtn = document.querySelector('.nav-tools a[title="Logout"]');
+  // const logoutBtn = document.querySelector('.nav-tools a[title="Logout"]');
 
   if (user) {
-    loginBtn.textContent = `Welcome, ${user.nickname || user.name || user.email}`;
+    loginBtn.textContent = `${user.nickname || user.name || user.email}`;
 
     loginBtn.style.display = 'block';
-    logoutBtn.style.display = 'block';
+    // logoutBtn.style.display = 'block';
 
-    logoutBtn.addEventListener('click', async () => {
+    const lgOutBtnP = document.createElement('p');
+    lgOutBtnP.classList.add('button-container');
+    lgOutBtnP.id = 'logout-button';
+    const lgOutBtnA = document.createElement('a');
+    lgOutBtnA.classList.add('button');
+    lgOutBtnA.title = 'Logout';
+    lgOutBtnA.textContent = 'Logout';
+
+    document.querySelector('.section.nav-tools > div.default-content-wrapper').append(lgOutBtnP);
+
+    lgOutBtnP.append(lgOutBtnA);
+
+    lgOutBtnA.addEventListener('click', async () => {
       await auth0.logout({ returnTo: window.location.origin });
     });
   } else {
     loginBtn.style.display = 'block';
-    logoutBtn.style.display = 'none';
+    document.querySelector('#logout-button').style.display = 'none';
   }
 }
 
@@ -178,7 +192,7 @@ async function updateLoginState() {
 export default async function decorate(block) {
   // load nav as fragment
   const navMeta = getMetadata('nav');
-  const navPath = navMeta ? new URL(navMeta, window.location).pathname : '/drafts/nav';
+  const navPath = navMeta ? new URL(navMeta, window.location).pathname : '/nav';
   const fragment = await loadFragment(navPath);
 
   // decorate nav DOM
