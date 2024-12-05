@@ -103,6 +103,90 @@ function toggleMenu(nav, navSections, forceExpanded = null) {
   }
 }
 
+let auth0 = null;
+async function initAuth0() {
+  const { createAuth0Client } = window.auth0;
+  auth0 = await createAuth0Client({
+    domain: 'dev-moq43cn106jxt2mm.us.auth0.com',
+    clientId: 'P3icLdZ89e4sdIjht9oHxFpfeeMOtMkY',
+    authorizationParams: {
+      redirect_uri: window.location.origin,
+    },
+  });
+
+  const isAuthenticated = await auth0.isAuthenticated();
+
+  if (isAuthenticated) {
+    updateLoginState();
+  } else {
+    const query = window.location.search;
+    if (window.location.search.includes('code=') && window.location.search.includes('state=')) {
+      try {
+        await auth0.handleRedirectCallback();
+        const user = await auth0.getUser();
+        console.log('User:', user);
+        updateLoginState();
+        window.history.replaceState({}, document.title, '/');
+      } catch (err) {
+        console.error('Error handling redirect callback:', err);
+      }
+    }
+  }
+
+  const loginBtn = document.querySelector('.nav-tools a[title="Login"]');
+  // const logoutBtn = document.querySelector('.nav-tools a[title="Logout"]');
+
+  loginBtn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    await auth0.loginWithRedirect({
+      redirect_uri: window.location.origin,
+    });
+  });
+
+  /**
+  logoutBtn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    await auth0.logout({
+      logoutParams: {
+        returnTo: window.location.origin
+      }
+    });
+  });
+    * */
+}
+
+async function updateLoginState() {
+  const user = await auth0.getUser();
+  const loginBtn = document.querySelector('.nav-tools a[title="Login"]');
+  // const logoutBtn = document.querySelector('.nav-tools a[title="Logout"]');
+
+  if (user) {
+    loginBtn.textContent = `${user.nickname || user.name || user.email}`;
+
+    loginBtn.style.display = 'block';
+    // logoutBtn.style.display = 'block';
+
+    const lgOutBtnP = document.createElement('p');
+    lgOutBtnP.classList.add('button-container');
+    lgOutBtnP.id = 'logout-button';
+    const lgOutBtnA = document.createElement('a');
+    lgOutBtnA.classList.add('button');
+    lgOutBtnA.title = 'Logout';
+    lgOutBtnA.textContent = 'Logout';
+
+    document.querySelector('.section.nav-tools > div.default-content-wrapper').append(lgOutBtnP);
+
+    lgOutBtnP.append(lgOutBtnA);
+
+    lgOutBtnA.addEventListener('click', async () => {
+      await auth0.logout({ returnTo: window.location.origin });
+    });
+  } else {
+    loginBtn.style.display = 'block';
+    document.querySelector('#logout-button').style.display = 'none';
+  }
+}
+
 /**
  * loads and decorates the header, mainly the nav
  * @param {Element} block The header block element
@@ -163,4 +247,6 @@ export default async function decorate(block) {
   navWrapper.className = 'nav-wrapper';
   navWrapper.append(nav);
   block.append(navWrapper);
+
+  await initAuth0();
 }
