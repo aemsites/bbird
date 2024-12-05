@@ -112,7 +112,6 @@ async function initAuth0() {
     redirect_uri: window.location.origin,
   });
 
-
   const isAuthenticated = await auth0.isAuthenticated();
 
   if (isAuthenticated) {
@@ -130,25 +129,24 @@ async function initAuth0() {
         console.error('Error handling redirect callback:', err);
       }
     }
-    
   }
 
   const loginBtn = document.querySelector('.nav-tools a[title="Login"]');
   const logoutBtn = document.querySelector('.nav-tools a[title="Logout"]');
-	
-  loginBtn.addEventListener("click", async e => {
-		e.preventDefault();
-		await auth0.loginWithRedirect({
-      redirect_uri: window.location.origin,
-      });
-	});
 
-	logoutBtn.addEventListener("click", async e => {
-		e.preventDefault();
-		await auth0.logoutWithRedirect({
+  loginBtn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    await auth0.loginWithRedirect({
       redirect_uri: window.location.origin,
-      });
-	});
+    });
+  });
+
+  logoutBtn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    await auth0.logoutWithRedirect({
+      redirect_uri: window.location.origin,
+    });
+  });
 }
 
 async function updateLoginState() {
@@ -176,7 +174,6 @@ async function updateLoginState() {
  * @param {Element} block The header block element
  */
 export default async function decorate(block) {
-
   // load nav as fragment
   const navMeta = getMetadata('nav');
   const navPath = navMeta ? new URL(navMeta, window.location).pathname : '/drafts/nav';
