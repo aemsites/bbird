@@ -3,6 +3,7 @@ import { loadFragment } from '../fragment/fragment.js';
 
 // media query match that indicates mobile/tablet width
 const isDesktop = window.matchMedia('(min-width: 900px)');
+let auth0 = null;
 
 function closeOnEscape(e) {
   if (e.code === 'Escape') {
@@ -49,6 +50,40 @@ function openOnKeydown(e) {
 
 function focusNavSection() {
   document.activeElement.addEventListener('keydown', openOnKeydown);
+}
+
+async function updateLoginState() {
+  const user = await auth0.getUser();
+  const loginBtn = document.querySelector('.nav-tools a[title="Login"]');
+
+  if (user) {
+    const username = loginBtn.parentElement;
+    username.textContent = `${user.nickname || user.name || user.email}`;
+    username.classList.remove('button-container');
+    username.classList.add('nav-user');
+    loginBtn.style.display = 'block';
+
+    const lgOutBtnP = document.createElement('p');
+    lgOutBtnP.classList.add('button-container');
+    lgOutBtnP.id = 'logout-button';
+    const lgOutBtnA = document.createElement('a');
+    lgOutBtnA.classList.add('button');
+    lgOutBtnA.title = 'Logout';
+    lgOutBtnA.textContent = 'Logout';
+    lgOutBtnA.style.display = 'block';
+    lgOutBtnA.href = '/';
+
+    document.querySelector('.section.nav-tools > div.default-content-wrapper').append(lgOutBtnP);
+
+    lgOutBtnP.append(lgOutBtnA);
+
+    lgOutBtnA.addEventListener('click', async () => {
+      await auth0.logout({ returnTo: window.location.origin });
+    });
+  } else {
+    loginBtn.style.display = 'block';
+    document.querySelector('#logout-button').style.display = 'none';
+  }
 }
 
 /**
@@ -103,7 +138,6 @@ function toggleMenu(nav, navSections, forceExpanded = null) {
   }
 }
 
-let auth0 = null;
 async function initAuth0() {
   const { createAuth0Client } = window.auth0;
   auth0 = await createAuth0Client({
@@ -118,18 +152,16 @@ async function initAuth0() {
 
   if (isAuthenticated) {
     updateLoginState();
-  } else {
-    const query = window.location.search;
-    if (window.location.search.includes('code=') && window.location.search.includes('state=')) {
-      try {
-        await auth0.handleRedirectCallback();
-        const user = await auth0.getUser();
-        console.log('User:', user);
-        updateLoginState();
-        window.history.replaceState({}, document.title, '/');
-      } catch (err) {
-        console.error('Error handling redirect callback:', err);
-      }
+  } else if (window.location.search.includes('code=') && window.location.search.includes('state=')) {
+    try {
+      await auth0.handleRedirectCallback();
+      // const user = await auth0.getUser();
+      // console.log('User:', user);
+      updateLoginState();
+      window.history.replaceState({}, document.title, '/');
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('Error handling redirect callback:', err);
     }
   }
 
@@ -153,40 +185,6 @@ async function initAuth0() {
     });
   });
     * */
-}
-
-async function updateLoginState() {
-  const user = await auth0.getUser();
-  const loginBtn = document.querySelector('.nav-tools a[title="Login"]');
-
-  if (user) {
-    const username = loginBtn.parentElement;
-    username.textContent = `${user.nickname || user.name || user.email}`;
-    username.classList.remove('button-container');
-    username.classList.add('nav-user');
-    loginBtn.style.display = 'block';
-
-    const lgOutBtnP = document.createElement('p');
-    lgOutBtnP.classList.add('button-container');
-    lgOutBtnP.id = 'logout-button';
-    const lgOutBtnA = document.createElement('a');
-    lgOutBtnA.classList.add('button');
-    lgOutBtnA.title = 'Logout';
-    lgOutBtnA.textContent = 'Logout';
-    lgOutBtnA.style.display = 'block';
-    lgOutBtnA.href = '/';
-
-    document.querySelector('.section.nav-tools > div.default-content-wrapper').append(lgOutBtnP);
-
-    lgOutBtnP.append(lgOutBtnA);
-
-    lgOutBtnA.addEventListener('click', async () => {
-      await auth0.logout({ returnTo: window.location.origin });
-    });
-  } else {
-    loginBtn.style.display = 'block';
-    document.querySelector('#logout-button').style.display = 'none';
-  }
 }
 
 /**
