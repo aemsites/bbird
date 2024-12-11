@@ -218,6 +218,16 @@ export default async function decorate(block) {
     brandLink.closest('.button-container').className = '';
   }
 
+  // SharePoint can't wrap a picture in a link, so we need to move the picture to the link
+  const brandPicture = navBrand.querySelector('picture');
+  if (brandPicture) {
+    const brandPicLink = brandPicture.nextElementSibling;
+    if (brandPicLink?.tagName === 'A' && brandPicLink.href) {
+      brandPicLink.innerHTML = brandPicture.outerHTML;
+      brandPicture.remove();
+    }
+  }
+
   const navSections = nav.querySelector('.nav-sections');
   if (navSections) {
     navSections.querySelectorAll(':scope .default-content-wrapper > ul > li').forEach((navSection) => {
