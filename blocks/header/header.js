@@ -158,13 +158,13 @@ async function initAuth0() {
 async function updateLoginState() {
   const user = await auth0.getUser();
   const loginBtn = document.querySelector('.nav-tools a[title="Login"]');
-  // const logoutBtn = document.querySelector('.nav-tools a[title="Logout"]');
 
   if (user) {
-    loginBtn.textContent = `${user.nickname || user.name || user.email}`;
-
+    const username = loginBtn.parentElement;
+    username.textContent = `${user.nickname || user.name || user.email}`;
+    username.classList.remove('button-container');
+    username.classList.add('nav-user');
     loginBtn.style.display = 'block';
-    // logoutBtn.style.display = 'block';
 
     const lgOutBtnP = document.createElement('p');
     lgOutBtnP.classList.add('button-container');
