@@ -8,6 +8,28 @@
             "passConfig": true,
             "environments": ["preview","live", "edit"],
             "includePaths": ["**.docx**"]
-          }
+          },
+          {
+            "id": "tools",
+            "title": "Tools",
+            "isContainer": true,
+            "environments": [
+              "dev",
+              "preview",
+              "live",
+              "edit"
+            ]
+          },
+        {
+          "containerId": "tools",
+          "id": "preflight",
+          "title": "Preflight",
+          "environments": [
+            "dev",
+            "preview",
+            "live"
+          ],
+          "event": "preflight"
+        }  
     ]
     }
