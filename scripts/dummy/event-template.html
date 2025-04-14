@@ -1,7 +1,17 @@
 <html>
 <head>
+  <title>{{title}}</title>
+  <description>{{description}}</description>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Report",
+      "data": {{{json}}}
+    }
+  </script>
 </head>
 <body>
+  <header></header>
   <div>
     <div class="hero event">
       <div>
@@ -99,5 +109,6 @@
       </div>
     </div>
   </div>
+  <footer></footer>
 </body>
 </html> 
