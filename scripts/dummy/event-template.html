@@ -4,9 +4,28 @@
   <meta name="description" content="{{description}}">
   <script type="application/ld+json">
     {
-      "@context": "https://schema.org",
-      "@type": "Report",
-      "data": {{{json}}}
+      "@context": {
+        "@vocab": "http://schema.org/",
+        "econ": "http://econoday.com/",
+        "cq": "http://www.adobe.com/experience-manager/tags",
+        "values": {
+          "@container": "@list"
+        }
+      },
+      "uid": "{{uid}}",
+      "name": "{{name}}",
+      "title": "{{title}}",
+      "effectiveDate": "{{effectiveDate}}",
+      "startDate": "{{startDate}}",
+      "endDate": "{{endDate}}",
+      "cq:tags": [{{#cq:tags}}"{{.}}"{{^@last}},{{/@last}}{{/cq:tags}}],
+      "values": [{{#values}}{"valueUid":"{{valueUid}}","displayValueId":"{{displayValueId}}","valueName":"{{valueName}}","suffix":"{{suffix}}","prefix":"{{prefix}}","consensus":"{{consensus}}","consensusRangeFrom":"{{consensusRangeFrom}}","consensusRangeTo":"{{consensusRangeTo}}","actual":"{{actual}}","previous":"{{previous}}","revised":"{{revised}}"}{{^@last}},{{/@last}}{{/values}}],
+      "description": "{{description}}",
+      "reports": [{{#reports}}{"report":"{{{report}}}"}{{^@last}},{{/@last}}{{/reports}}],
+      "highlights": "{{highlights}}",
+      "consensusNotes": "{{consensusNotes}}",
+      "definition": "{{definition}}",
+      "charts": [{{#charts}}{"chart":"{{chart}}"}{{^@last}},{{/@last}}{{/charts}}]
     }
   </script>
 </head>
