@@ -36,6 +36,7 @@ export default async function decorate(block) {
   const domainkey = params.get('domainkey') || 'default-domainkey';
   const startdate = params.get('startdate') || 'default-date'
   const enddate = params.get('enddate') || 'default-date'
+  const endpoint = params.get('endpoint') || 'default-date'
 
   block.innerHTML = '';
 
@@ -59,7 +60,7 @@ export default async function decorate(block) {
   block.appendChild(moreBtn); // append after loader so loader can replace it
 
   // === API Setup ===
-  const apiURL = new URL('http://localhost:8001/get-bboxes/start');
+  const apiURL = new URL(`https://bbox-api-${endpoint}.us-central1.run.app/get-bboxes/start`);
   apiURL.searchParams.set('domain', domain);
   apiURL.searchParams.set('checkpoint', 'click');
   apiURL.searchParams.set('domainkey', domainkey);
@@ -107,7 +108,7 @@ export default async function decorate(block) {
         moreBtn.replaceWith(loader);
         loader.style.display = 'block';
 
-        const nextURL = new URL('http://localhost:8001/get-bboxes/next');
+        const nextURL = new URL(`https://bbox-api-${endpoint}.us-central1.run.app/get-bboxes/next`);
         
         try {
           const nextRes = await fetch(nextURL, {
