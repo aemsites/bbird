@@ -225,11 +225,11 @@ function renderResults(results, grid) {
 
       const approveBtn = document.createElement('button');
       approveBtn.classList.add('approve-btn');
-      approveBtn.textContent = '✅ Approve';
+      approveBtn.textContent = 'Approve';
 
       const dismissBtn = document.createElement('button');
       dismissBtn.classList.add('dismiss-btn');
-      dismissBtn.textContent = '❌ Dismiss';
+      dismissBtn.textContent = 'Dismiss';
 
       approveBtn.addEventListener('click', async (e) => {
         e.stopPropagation(); // Prevent zoom
