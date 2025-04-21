@@ -1,0 +1,155 @@
+<html>
+<head>
+  <title>{{title}}</title>
+  <meta name="description" content="{{description}}">
+  <meta name="template" content="event">
+  {{#tags}}
+  <meta property="article:tag" content="{{.}}">
+  {{/tags}}
+  <meta name="primary-topic" content="content-type/economic-release">
+  <meta name="date" content="{{startDate}}">
+  <meta name="start-date" content="{{startDate}}">
+  <meta name="end-date" content="{{endDate}}">
+</head>
+<body>
+  <header></header>
+  <main>
+    <div>
+      <div class="hero event">
+        <div>
+          <div>
+            <p>
+              <picture>
+                <img loading="lazy" alt=""
+                  src="https://main--www--cmegroup.aem.live/media_168daa8839e1f115b98954b9049336a9accc54038.png">
+              </picture>
+            </p>
+            <p><a href="https://www.cmegroup.com/education/events/economic-releases-calendar.html"><span
+                  class="icon icon-arrow-left-bold"></span>Economic Calendar</a></p>
+            <h1>{{title}}</h1>
+          </div>
+        </div>
+      </div>
+      <div class="section-metadata">
+        <div>
+          <div>style</div>
+          <div>full-width</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="add-to-calendar">
+        <div>
+          <div></div>
+        </div>
+      </div>
+    </div>
+    {{#hasValues}}
+    <div>
+      <div class="table">
+        <div>
+          <div>
+            <table>
+              <thead>
+                <tr>
+                  <th></th>
+                  {{#hasConsensus}}<th>Consensus</th>{{/hasConsensus}}
+                  {{#hasConsensusRange}}<th>Consensus Range</th>{{/hasConsensusRange}}
+                  {{#hasActual}}<th>Actual</th>{{/hasActual}}
+                  {{#hasPrevious}}<th>Previous</th>{{/hasPrevious}}
+                  {{#hasRevised}}<th>Revised</th>{{/hasRevised}}
+                </tr>
+              </thead>
+              <tbody>
+                {{#values}}
+                <tr>
+                  <td>{{valueName}}</td>
+                  {{#hasConsensus}}<td>{{prefix}}{{consensus}}{{suffix}}</td>{{/hasConsensus}}
+                  {{#hasConsensusRange}}
+                    <td>
+                      {{#consensusRangeFrom}}{{prefix}}{{consensusRangeFrom}}{{suffix}}{{/consensusRangeFrom}}
+                      {{#consensusRangeFrom}}{{#consensusRangeTo}} to {{/consensusRangeTo}}{{/consensusRangeFrom}}
+                      {{#consensusRangeTo}}{{prefix}}{{consensusRangeTo}}{{suffix}}{{/consensusRangeTo}}
+                    </td>
+                  {{/hasConsensusRange}}
+                  {{#hasActual}}<td>{{prefix}}{{actual}}{{suffix}}</td>{{/hasActual}}
+                  {{#hasPrevious}}<td>{{prefix}}{{previous}}{{suffix}}</td>{{/hasPrevious}}
+                  {{#hasRevised}}<td>{{prefix}}{{revised}}{{suffix}}</td>{{/hasRevised}}
+                </tr>
+                {{/values}}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    {{/hasValues}}
+    {{#reports}}
+    <div>
+      <div class="table">
+        <div>
+          <div>
+            {{{report}}}
+          </div>
+        </div>
+      </div>
+    </div>
+    {{/reports}}
+    {{#hasHighlights}}
+      <div>
+        <h3 id="highlights">Highlights</h3>
+        {{{highlights}}}
+      </div>
+    {{/hasHighlights}}
+    {{#hasConsensusNotes}}
+      <div>
+        <h3 id="market-consensus-before-announcement">Market Consensus Before Announcement</h3>
+        {{{consensusNotes}}}
+      </div>
+    {{/hasConsensusNotes}}
+    {{#hasDefinition}}
+      <div>
+        <h3 id="definition">Definition</h3>
+        {{{definition}}}
+      </div>
+    {{/hasDefinition}}
+    {{#hasDescription}}
+      <div>
+        <h3 id="description">Description</h3>
+        {{{description}}}
+      </div>
+    {{/hasDescription}}
+    {{#charts}}
+    <div>
+      <p>
+        <picture>
+          <img loading="lazy" alt="" src="{{chart}}">
+        </picture>
+      </p>
+    </div>
+    {{/charts}}
+    </div>
+    <div>
+      <h5 id="recommended-for-you">Recommended for you</h5>
+      <div class="cards dynamic article">
+        <div>
+          <div>endpoint</div>
+          <div>
+            https://www.cmegroup.com/content/cmegroup/en/misc/api/content-feeds-for-google-docs/education-home-page-follow-the-markets/jcr:content/main-content-section/section/section-elements/search_sort_filter_d.ssfajax.0.0.json
+          </div>
+        </div>
+      </div>
+      <h5 id="upcoming-events">Upcoming Events</h5>
+      <div class="cards dynamic article">
+        <div>
+          <div>endpoint</div>
+          <div>
+            https://www.cmegroup.com/content/cmegroup/en/misc/api/content-feeds-for-google-docs/education-home-page-follow-the-markets/jcr:content/main-content-section/section/section-elements/search_sort_filter_d.ssfajax.0.0.json
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <footer></footer>
+</body>
+</html>
