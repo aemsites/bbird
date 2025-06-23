@@ -40,8 +40,8 @@ jobs:
           name: cwv-summaries
           path: .cache/*.report.gpt4o.summary.md
 
-      - name: Print project file tree
+      - name: Print project file tree (excluding node_modules)
         run: |
           sudo apt-get update && sudo apt-get install -y tree
-          echo "Project structure:"
-          tree -L 3 -a
+          echo "📁 Project structure (excluding node_modules):"
+          tree -L 3 -a -I 'node_modules'
