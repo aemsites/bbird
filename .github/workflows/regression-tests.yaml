@@ -27,8 +27,41 @@ jobs:
     - name: Install dependencies
       run: npm ci
       
+    - name: Clone regression tester repository
+      run: git clone https://github.com/MarquiseRosier/regression-tester.git
+      
+    - name: Install regression tester dependencies
+      run: |
+        cd regression-tester
+        # Check if package.json exists, if not, create a basic one
+        if [ ! -f package.json ]; then
+          echo '{"type": "module", "dependencies": {"dotenv": "^16.0.0", "yargs": "^17.0.0"}}' > package.json
+        fi
+        npm install
+      
+    - name: Extract URL from PR
+      id: extract-url
+      run: |
+        # Get PR description and comments
+        PR_BODY="${{ github.event.pull_request.body }}"
+        PR_TITLE="${{ github.event.pull_request.title }}"
+        
+        # Search for --after tag in PR body and title
+        URL=$(echo "$PR_BODY $PR_TITLE" | grep -o '--after [^[:space:]]*' | head -1 | sed 's/--after //')
+        
+        if [ -z "$URL" ]; then
+          echo "No URL found with --after tag in PR description or title"
+          echo "Please add a URL with --after tag in your PR description"
+          exit 1
+        fi
+        
+        echo "url=$URL" >> $GITHUB_OUTPUT
+        echo "Extracted URL: $URL"
+      
     - name: Run regression tests
-      run: node .github/regressionTest/regressionTest.js
+      run: |
+        cd regression-tester
+        node index.js --url "${{ steps.extract-url.outputs.url }}" --metric cwv --device desktop
       env:
         NODE_ENV: test
         CI: true
@@ -39,6 +72,7 @@ jobs:
       with:
         name: regression-test-results-${{ github.run_number }}
         path: |
-          .github/regressionTest/results/
-          .github/regressionTest/logs/
+          regression-tester/results/
+          regression-tester/logs/
+          regression-tester/output/
         retention-days: 7 
