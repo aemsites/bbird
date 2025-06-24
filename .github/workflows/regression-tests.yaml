@@ -39,29 +39,24 @@ jobs:
         fi
         npm install
       
-    - name: Extract URL from PR
-      id: extract-url
+    - name: Construct AEM Preview URL
+      id: construct-url
       run: |
-        # Get PR description and comments
-        PR_BODY="${{ github.event.pull_request.body }}"
-        PR_TITLE="${{ github.event.pull_request.title }}"
+        BRANCH="${{ github.head_ref }}"
+        REPO="${{ github.event.repository.name }}"
+        OWNER="${{ github.repository_owner }}"
+        PREVIEW_URL="https://${BRANCH}--${REPO}--${OWNER}.aem.live"
         
-        # Search for --after tag in PR body and title
-        URL=$(echo "$PR_BODY $PR_TITLE" | grep -o '--after [^[:space:]]*' | head -1 | sed 's/--after //')
-        
-        if [ -z "$URL" ]; then
-          echo "No URL found with --after tag in PR description or title"
-          echo "Please add a URL with --after tag in your PR description"
-          exit 1
-        fi
-        
-        echo "url=$URL" >> $GITHUB_OUTPUT
-        echo "Extracted URL: $URL"
+        echo "url=$PREVIEW_URL" >> $GITHUB_OUTPUT
+        echo "Branch: $BRANCH"
+        echo "Repository: $REPO"
+        echo "Owner: $OWNER"
+        echo "Constructed AEM Preview URL: $PREVIEW_URL"
       
     - name: Run regression tests
       run: |
         cd regression-tester
-        node index.js --url "${{ steps.extract-url.outputs.url }}" --metric cwv --device desktop
+        node index.js --url "${{ steps.construct-url.outputs.url }}" --metric cwv --device desktop
       env:
         NODE_ENV: test
         CI: true
