@@ -66,27 +66,28 @@ jobs:
     - name: Construct AEM Preview URL
       id: construct-url
       run: |
-        # Use manual input URL if provided, otherwise construct from PR context
-        if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.test_url }}" ]; then
-          PREVIEW_URL="${{ github.event.inputs.test_url }}"
-          echo "Using manual input URL: $PREVIEW_URL"
-        else
-          BRANCH="${{ github.head_ref }}"
-          REPO="${{ github.event.repository.name }}"
-          OWNER="${{ github.repository_owner }}"
-          PREVIEW_URL="https://${BRANCH}--${REPO}--${OWNER}.aem.live"
-          echo "Branch: $BRANCH"
-          echo "Repository: $REPO"
-          echo "Owner: $OWNER"
-          echo "Constructed AEM Preview URL: $PREVIEW_URL"
-        fi
+        BRANCH="${{ github.head_ref }}"
+        REPO="${{ github.event.repository.name }}"
+        OWNER="${{ github.repository_owner }}"
+        PREVIEW_URL="https://${BRANCH}--${REPO}--${OWNER}.aem.live"
         
-        echo "url=$PREVIEW_URL" >> $GITHUB_OUTPUT
+        echo "preview_url=$PREVIEW_URL" >> $GITHUB_OUTPUT
+        echo "live_url=https://www.bbird.live" >> $GITHUB_OUTPUT
+        echo "domain_key=A78D09BF-421F-495F-B4D4-1486F6BFD096-8E11F549" >> $GITHUB_OUTPUT
+        echo "Branch: $BRANCH"
+        echo "Repository: $REPO"
+        echo "Owner: $OWNER"
+        echo "Constructed AEM Preview URL: $PREVIEW_URL"
       
     - name: Run regression tests
       run: |
         cd regression-tester
-        node index.js --url "${{ steps.construct-url.outputs.url }}" --metric "${{ github.event.inputs.metric || 'cwv' }}" --device "${{ github.event.inputs.device || 'desktop' }}"
+        node index.js \
+          --domainkey "${{ steps.construct-url.outputs.domain_key || 'A78D09BF-421F-495F-B4D4-1486F6BFD096-8E11F549'}}" \
+          --metric "${{ github.event.inputs.metric || 'cwv' }}" \
+          --device "${{ github.event.inputs.device || 'desktop' }}" \
+          --previewUrl "${{ steps.construct-url.outputs.preview_url }}" \
+          --liveUrl "${{ steps.construct-url.outputs.live_url }}"
       env:
         NODE_ENV: test
         CI: true

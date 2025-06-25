@@ -1,0 +1,32 @@
+{
+  "name": "bbird-load-testing",
+  "version": "1.0.0",
+  "description": "Load testing module for bbird.live using Playwright",
+  "main": "load-test.js",
+  "scripts": {
+    "test": "node load-test.js",
+    "test:light": "node load-test.js --users 5 --duration 30",
+    "test:medium": "node load-test.js --users 20 --duration 60",
+    "test:heavy": "node load-test.js --users 50 --duration 120",
+    "install:playwright": "npx playwright install chromium",
+    "report": "node generate-report.js"
+  },
+  "dependencies": {
+    "playwright": "^1.40.0",
+    "commander": "^11.1.0",
+    "chalk": "^4.1.2",
+    "cli-progress": "^3.12.0",
+    "csv-writer": "^1.6.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  },
+  "keywords": [
+    "load-testing",
+    "playwright",
+    "performance",
+    "bbird"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+} 
