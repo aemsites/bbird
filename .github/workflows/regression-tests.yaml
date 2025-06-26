@@ -55,7 +55,7 @@ jobs:
       run: npm ci
       
     - name: Clone regression tester repository
-      run: git clone --branch origin/custom-version https://github.com/MarquiseRosier/regression-tester.git
+      run: git clone --branch custom-version https://github.com/MarquiseRosier/regression-tester.git
       
     - name: Install regression tester dependencies
       run: |
