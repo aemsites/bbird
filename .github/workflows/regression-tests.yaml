@@ -78,6 +78,41 @@ jobs:
         echo "Repository: $REPO"
         echo "Owner: $OWNER"
         echo "Constructed AEM Preview URL: $PREVIEW_URL"
+
+    - name: Get Changed Files and Diff
+      id: get-diff
+      run: |
+        echo "Base branch: ${{ github.event.pull_request.base.ref }}"
+        git fetch origin ${{ github.event.pull_request.base.ref }}
+
+        echo "Changed files:"
+        git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD > changed_files.txt
+        cat changed_files.txt
+
+        echo "Full diff:"
+        git diff origin/${{ github.event.pull_request.base.ref }}...HEAD > full_diff.txt
+        head -n 20 full_diff.txt || true  # Print first 20 lines for visibility
+
+    - name: Run regression tests
+      run: |
+        cd regression-tester
+        node index.js --url "${{ steps.construct-url.outputs.url }}" --metric "${{ github.event.inputs.metric || 'cwv' }}" --device "${{ github.event.inputs.device || 'desktop' }}"
+      env:
+        NODE_ENV: test
+        CI: true
+
+    - name: Upload test results (if any)
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: regression-test-results-${{ github.run_number }}
+        path: |
+          regression-tester/results/
+          regression-tester/logs/
+          regression-tester/output/
+          changed_files.txt
+          full_diff.txt
+        retention-days: 1
       
     - name: Run regression tests
       run: |
@@ -101,4 +136,6 @@ jobs:
           regression-tester/results/
           regression-tester/logs/
           regression-tester/output/
-        retention-days: 7 
+          changed_files.txt
+          full_diff.txt
+        retention-days: 1
