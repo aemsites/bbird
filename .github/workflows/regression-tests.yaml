@@ -83,15 +83,17 @@ jobs:
       id: get-diff
       run: |
         echo "Base branch: ${{ github.event.pull_request.base.ref }}"
-        git fetch origin ${{ github.event.pull_request.base.ref }}
+
+        # Fetch the base branch explicitly
+        git fetch origin ${{ github.event.pull_request.base.ref }} --depth=1
 
         echo "Changed files:"
-        git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD > changed_files.txt
-        cat changed_files.txt
+        git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD > changed_files.txt || echo "No changes found"
+        cat changed_files.txt || true
 
         echo "Full diff:"
-        git diff origin/${{ github.event.pull_request.base.ref }}...HEAD > full_diff.txt
-        head -n 20 full_diff.txt || true  # Print first 20 lines for visibility
+        git diff origin/${{ github.event.pull_request.base.ref }}...HEAD > full_diff.txt || echo "No diff"
+        head -n 20 full_diff.txt || true
 
     - name: Run regression tests
       run: |
