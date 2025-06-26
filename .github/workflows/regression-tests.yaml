@@ -96,19 +96,6 @@ jobs:
         echo "Full diff:"
         git diff origin/${{ github.event.pull_request.base.ref }}...HEAD > full_diff.txt || echo "No diff"
         head -n 20 full_diff.txt || true
-
-    - name: Upload test results (if any)
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: regression-test-results-${{ github.run_number }}
-        path: |
-          regression-tester/results/
-          regression-tester/logs/
-          regression-tester/output/
-          changed_files.txt
-          full_diff.txt
-        retention-days: 1
       
     - name: Run regression tests
       run: |
