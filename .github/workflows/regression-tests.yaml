@@ -37,6 +37,7 @@ jobs:
   regression-tests:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    environment: regression-tester
     
     steps:
     - name: Checkout code (full history)
