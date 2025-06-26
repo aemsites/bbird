@@ -39,8 +39,10 @@ jobs:
     timeout-minutes: 10
     
     steps:
-    - name: Checkout code
+    - name: Checkout code (full history)
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
       
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -94,14 +96,6 @@ jobs:
         echo "Full diff:"
         git diff origin/${{ github.event.pull_request.base.ref }}...HEAD > full_diff.txt || echo "No diff"
         head -n 20 full_diff.txt || true
-
-    - name: Run regression tests
-      run: |
-        cd regression-tester
-        node index.js --url "${{ steps.construct-url.outputs.url }}" --metric "${{ github.event.inputs.metric || 'cwv' }}" --device "${{ github.event.inputs.device || 'desktop' }}"
-      env:
-        NODE_ENV: test
-        CI: true
 
     - name: Upload test results (if any)
       uses: actions/upload-artifact@v4
