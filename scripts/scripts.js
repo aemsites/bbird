@@ -44,6 +44,22 @@ async function loadFonts() {
   }
 }
 
+function buildCtaBlock(main) {
+  main.querySelectorAll(':scope > div').forEach((div) => {
+    const h2 = div.querySelector(':scope > h2');
+    const p = div.querySelector(':scope > p');
+    const numChildren = div.children.length;
+    if (p) {
+      const a = p.querySelector('a');
+      // eslint-disable-next-line no-bitwise
+      if (h2 && p && a && (h2.compareDocumentPosition(p) & Node.DOCUMENT_POSITION_FOLLOWING)
+           && (numChildren === 2)) {
+        div.classList.add('cta');
+      }
+    }
+  });
+}
+
 /**
  * Builds all synthetic blocks in a container element.
  * @param {Element} main The container element
@@ -51,6 +67,7 @@ async function loadFonts() {
 function buildAutoBlocks(main) {
   try {
     buildHeroBlock(main);
+    buildCtaBlock(main);
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error('Auto Blocking failed', error);
