@@ -56,14 +56,17 @@ jobs:
           echo "⚡ Using URL: ${{ steps.build_url.outputs.preview_url }}"
           node node_modules/cwv-agent/index.js --action prompt --url ${{ steps.build_url.outputs.preview_url }} --device mobile --model gpt-4o
           node node_modules/cwv-agent/index.js --action prompt --url ${{ steps.build_url.outputs.preview_url }} --device desktop --model gpt-4o
+          # Copy results to a top-level folder for uploading
+          mkdir -p cwv-output
+          find node_modules/cwv-agent/.cache -name "*.summary.md" -exec cp {} cwv-output/ \;
+          find node_modules/cwv-agent/.cache -name "*.suggestions.gpt4o.json" -exec cp {} cwv-output/ \;
 
       - name: Upload All CWV Summary Reports
         uses: actions/upload-artifact@v4
         with:
           name: cwv-summaries
-          path: |
-            node_modules/cwv-agent/.cache/*.report.gpt4o.summary.md
-            node_modules/cwv-agent/.cache/*.suggestions.gpt4o.json
+          path: cwv-output/*
+          if-no-files-found: error
 
 
       - name: Print project file tree (excluding node_modules)
