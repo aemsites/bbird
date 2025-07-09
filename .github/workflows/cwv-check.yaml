@@ -61,7 +61,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: cwv-summaries
-          path: .cache/*.report.gpt4o.summary.md
+          path: |
+            node_modules/cwv-agent/.cache/*.report.gpt4o.summary.md
+            node_modules/cwv-agent/.cache/*.suggestions.gpt4o.json
+
 
       - name: Print project file tree (excluding node_modules)
         run: |
