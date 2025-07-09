@@ -7,6 +7,7 @@ on:
 jobs:
   run-cwv-check:
     runs-on: ubuntu-latest
+    environment: cwv-check-env-junaid
 
     steps:
       - name: Checkout repo
