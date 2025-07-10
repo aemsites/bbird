@@ -84,6 +84,9 @@ jobs:
 
           git clone --depth 1 --branch gh-pages "$REPO_URL" gh-pages
 
+          # Clean old files for this PR branch
+          rm -f gh-pages/${{ github.head_ref }}.*
+
           # Copy CWV output reports to gh-pages root
           cp cwv-output/*.report.gpt4o.summary.md gh-pages/
           cp cwv-output/*.suggestions.gpt4o.json gh-pages/
@@ -95,34 +98,17 @@ jobs:
           git push "$REPO_URL" gh-pages
 
 
-      - name: Comment public CWV report URLs on PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const pr = context.payload.pull_request;
-            const baseUrl = `https://aemsites.github.io/bbird`;
-            const branch = pr.head.ref;
+      - name: Print public CWV URLs
+        run: |
+          REPO="${{ github.event.repository.name }}"
+          OWNER="${{ github.repository_owner }}"
+          BRANCH="${{ github.head_ref }}"
+          BASE_URL="https://${OWNER}.github.io/${REPO}"
+          echo "🔗 Public CWV Report Links for Branch: $BRANCH"
+          echo "📄 Desktop Report: $BASE_URL/${BRANCH}.desktop.report.gpt4o.summary.md"
+          echo "📄 Mobile Report:  $BASE_URL/${BRANCH}.mobile.report.gpt4o.summary.md"
+          echo "🧠 Suggestions:    $BASE_URL/${BRANCH}.suggestions.gpt4o.json"
 
-            const links = [
-              `[ Desktop Summary Report](${baseUrl}/${branch}.desktop.report.gpt4o.summary.md)`,
-              `[ Mobile Summary Report](${baseUrl}/${branch}.mobile.report.gpt4o.summary.md)`,
-              `[ Suggestions (JSON)](${baseUrl}/${branch}.suggestions.gpt4o.json)`
-            ];
-
-            const body = [
-              ' **CWV Reports are published publicly for this PR**:\n',
-              ...links,
-              `\n🔗 GitHub Pages: ${baseUrl}`
-            ].join('\n');
-
-            await github.rest.issues.createComment({
-              issue_number: pr.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body
-            });
 
       - name: Print project file tree (excluding node_modules)
         run: |
