@@ -1,20 +1,20 @@
 {
   "url": "https://add-cwv-check--bbird--aemsites.aem.page/",
   "deviceType": "desktop",
-  "timestamp": "2023-10-12T12:00:00Z",
+  "timestamp": "2023-11-23T20:45:00Z",
   "summary": {
     "lcp": {
-      "current": "304ms",
+      "current": "2.85s",
       "target": "2.5s",
       "status": "needs-improvement"
     },
     "cls": {
-      "current": "0.00",
+      "current": "0.08",
       "target": "0.1",
       "status": "good"
     },
     "inp": {
-      "current": "250ms",
+      "current": "240ms",
       "target": "200ms",
       "status": "needs-improvement"
     }
@@ -22,40 +22,40 @@
   "suggestions": [
     {
       "id": 1,
-      "title": "Optimize Third-Party Script Loading",
-      "description": "The auth0-spa-js third-party script causes render-blocking and delays in reaching LCP. It introduces unnecessary processing pre-LCP due to significant unused code.",
+      "title": "Optimize LCP Image Loading",
+      "description": "The main LCP element is a hero image that could benefit from optimization to improve load times.",
       "metric": "LCP",
       "priority": "High",
       "effort": "Medium",
-      "impact": "400ms - 600ms improvement on LCP",
-      "implementation": "Self-host auth0-spa-js library to reduce DNS lookup times. Consider code splitting to load only critical code pre-LCP, and defer non-essential functionalities. Evaluate possibility of making this resource non-blocking.",
-      "codeExample": "",
-      "category": "third-party"
-    },
-    {
-      "id": 2,
-      "title": "Reduce and Normalize Image Sizes",
-      "description": "Multiple large images are loaded with dimensions exceeding device-specific requirements, impacting load times significantly.",
-      "metric": "LCP",
-      "priority": "Medium",
-      "effort": "Medium",
-      "impact": "200ms - 300ms improvement in LCP",
-      "implementation": "Use srcset attribute with appropriately sized images for different viewports to minimize excessive image loading.",
-      "codeExample": "",
+      "impact": "~450ms",
+      "implementation": "Modify the hero image setup in `scripts.js` or `aem.js` to apply loading='eager' and fetchpriority='high' using JavaScript.",
+      "codeExample": "img.loading = eager; img.fetchPriority = high;",
       "category": "images"
     },
     {
-      "id": 3,
-      "title": "Restructure CSS and JS Loading Strategies",
-      "description": "There is potential to defer non-critical styling and scripts using lazy-styles.css and loadDelayed.",
-      "metric": "LCP",
-      "priority": "Low",
+      "id": 2,
+      "title": "Defer Third-party Scripts",
+      "description": "The `auth0-spa-js.production.js` file is introducing significant delay in loading.",
+      "metric": "INP",
+      "priority": "Medium",
       "effort": "Easy",
-      "impact": "Up to 50ms - 100ms improvement in LCP",
-      "implementation": "Ensure that lazy-styles.css contains only non-critical CSS. Utilize ‘loadEager’ to optimize the sequence of styling and functional scripts loaded in the critical path.",
-      "codeExample": "",
-      "category": "css"
+      "impact": "~100ms",
+      "implementation": "Modify the script inclusion from the HTML head to be loaded via `loadDelayed` function in `scripts.js`.",
+      "codeExample": "loadScript('https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js', { defer: true });",
+      "category": "third-party"
+    },
+    {
+      "id": 3,
+      "title": "Code Splitting and Tree-Shaking",
+      "description": "Excessive unused code in `scripts.js` and `aem.js` is affecting load performance.",
+      "metric": "LCP",
+      "priority": "Medium",
+      "effort": "Medium",
+      "impact": "~100ms",
+      "implementation": "Refactor `aem.js` and `scripts.js` to apply code splitting on heavily-used sections.",
+      "codeExample": null,
+      "category": "javascript"
     }
   ],
-  "extractedAt": "2025-07-10T23:08:47.161Z"
+  "extractedAt": "2025-07-10T23:22:35.518Z"
 }
