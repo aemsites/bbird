@@ -1,0 +1,73 @@
+{
+  "url": "https://add-cwv-check--bbird--aemsites.aem.page/",
+  "deviceType": "desktop",
+  "timestamp": "2023-10-26T10:00:00.000Z",
+  "summary": {
+    "lcp": {
+      "current": "304ms",
+      "target": "2.5s",
+      "status": "poor"
+    },
+    "cls": {
+      "current": "0.04",
+      "target": "0.1",
+      "status": "good"
+    },
+    "inp": {
+      "current": "250ms",
+      "target": "200ms",
+      "status": "poor"
+    }
+  },
+  "suggestions": [
+    {
+      "id": 1,
+      "title": "Optimize Image Delivery",
+      "description": "Ensure the LCP image is optimized for size and loaded with high priority to reduce load time.",
+      "metric": "LCP",
+      "priority": "High",
+      "effort": "Medium",
+      "impact": "240ms to 260ms",
+      "implementation": "Set image loading strategy using JavaScript adjustments to the attribute. Adjust width/height settings.",
+      "codeExample": "document.querySelector('img').setAttribute('loading', 'eager');",
+      "category": "images"
+    },
+    {
+      "id": 2,
+      "title": "Preload and Prioritize Critical CSS",
+      "description": "Reduce blocking CSS by splitting styles into critical and lazy-loaded, improving first-render time.",
+      "metric": "LCP",
+      "priority": "Medium",
+      "effort": "Medium",
+      "impact": "120ms",
+      "implementation": "Use HTTP Preload headers for key styles, and lazy-load less critical ones with conditional imports.",
+      "codeExample": "<link rel='preload' href='/styles/critical-styles.css' as='style'>",
+      "category": "css"
+    },
+    {
+      "id": 3,
+      "title": "Defer Third-party Scripts",
+      "description": "Convert blocking third-party scripts to asynchronous loading to prevent unnecessary blocking of main thread.",
+      "metric": "INP",
+      "priority": "High",
+      "effort": "Medium",
+      "impact": "100ms",
+      "implementation": "Add 'defer' or 'async' attributes to third-party script tags where possible.",
+      "codeExample": "<script src='https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js' async></script>",
+      "category": "third-party"
+    },
+    {
+      "id": 4,
+      "title": "Code Splitting and Unused Code Removal",
+      "description": "Identify unused code in large libraries and either remove or defer their loading to post-initial interactions.",
+      "metric": "INP",
+      "priority": "Medium",
+      "effort": "Medium",
+      "impact": "Reduction in INP timings",
+      "implementation": "Implement tools for tree-shaking unused code, and split large modules to load conditionally.",
+      "codeExample": "if(condition){ import('./block.js').then(module => module.default()); }",
+      "category": "javascript"
+    }
+  ],
+  "extractedAt": "2025-07-10T22:38:38.563Z"
+}
