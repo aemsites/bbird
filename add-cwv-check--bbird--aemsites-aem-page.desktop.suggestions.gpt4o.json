@@ -1,49 +1,85 @@
 {
   "url": "https://add-cwv-check--bbird--aemsites.aem.page/",
   "deviceType": "desktop",
-  "timestamp": "2023-10-05T14:30:00Z",
+  "timestamp": "2023-10-05T10:00:00Z",
   "summary": {
     "lcp": {
-      "current": "2.2s",
+      "current": "3.52s",
       "target": "2.5s",
-      "status": "good"
+      "status": "poor"
     },
     "cls": {
-      "current": "0.05",
+      "current": "0.15",
       "target": "0.1",
-      "status": "good"
+      "status": "needs-improvement"
     },
     "inp": {
-      "current": "278ms",
+      "current": "250ms",
       "target": "200ms",
-      "status": "poor"
+      "status": "needs-improvement"
     }
   },
   "suggestions": [
     {
       "id": 1,
-      "title": "Defer Third-Party Scripts Execution",
-      "description": "The script at https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js is blocking rendering and contributes to interaction latency. Defer its loading to improve user experience.",
-      "metric": "INP",
+      "title": "Optimize Largest Contentful Paint Image Loading",
+      "description": "The largest image on your page, the LCP element, isn't optimally loaded, affecting your LCP metric. This can be improved by setting a high fetch priority for this image and ensuring the rendering engine knows its importance early.",
+      "metric": "LCP",
       "priority": "High",
-      "effort": "Medium",
-      "impact": "150-200ms",
-      "implementation": "Defer the loading of auth0-spa-js.production.js until after the LCP. Consider using loadDelayed to load it during the delayed phase, given it’s not crucial pre-LCP.",
-      "codeExample": "",
-      "category": "third-party"
+      "effort": "Easy",
+      "impact": "300-400ms",
+      "implementation": "Use JavaScript to dynamically set fetch priority to high for the LCP image.",
+      "codeExample": "document.querySelector('img').setAttribute('fetchpriority', 'high');",
+      "category": "images"
     },
     {
       "id": 2,
-      "title": "Optimize JavaScript Code by Removing Unused Portions",
-      "description": "Significant unused code in JavaScript files contributes to inefficient processing, affecting user interactions. Optimize code usage by pruning unused code.",
-      "metric": "INP",
+      "title": "Deferral of Non-Critical Third-Party Scripts",
+      "description": "The `auth0-spa-js.production.js` script is loaded too early and contributes to rendering delay. It should be moved to a non-blocking execution post-LCP.",
+      "metric": "LCP",
       "priority": "High",
       "effort": "Medium",
-      "impact": "80-150ms",
-      "implementation": "Perform tree-shaking and code-splitting to defer or discard unused code, particularly focusing on auth0-spa-js.production.js for pre-LCP loading.",
+      "impact": "150ms",
+      "implementation": "Load the script asynchronously during the loadDelayed phase.",
+      "codeExample": "function loadDelayed() { window.setTimeout(() => { import('./delayed.js'); loadScript('https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js', { async: true }); }, 3000); }",
+      "category": "third-party"
+    },
+    {
+      "id": 3,
+      "title": "Implement Code Splitting for Auth0 JavaScript",
+      "description": "The `auth0-spa-js.production.js` file contains a significant amount of unused code pre-LCP, which increases the resource blocking time.",
+      "metric": "INP",
+      "priority": "Medium",
+      "effort": "Hard",
+      "impact": "100ms",
+      "implementation": "Consider refactoring this script into smaller, more focused modules that can be loaded as needed.",
       "codeExample": "",
       "category": "javascript"
+    },
+    {
+      "id": 4,
+      "title": "Optimize CSS Delivery",
+      "description": "Some CSS is render-blocking, which delays LCP. Ensure only critical CSS is included in the render path, and move other styles to `lazy-styles.css`.",
+      "metric": "LCP",
+      "priority": "Medium",
+      "effort": "Medium",
+      "impact": "100ms",
+      "implementation": "Refactor `styles.css` by moving non-critical styles to `lazy-styles.css` and ensuring only necessary styles are initially loaded.",
+      "codeExample": "",
+      "category": "css"
+    },
+    {
+      "id": 5,
+      "title": "Reduce Cumulative Layout Shift by Defining Image Dimensions",
+      "description": "Images on the page do not explicitly specify dimensions, contributing to layout shifts. Each image must have defined width and height attributes or aspect ratios.",
+      "metric": "CLS",
+      "priority": "High",
+      "effort": "Medium",
+      "impact": "0.05-0.10",
+      "implementation": "Use JavaScript to apply the correct aspect ratio (using CSS property) and ensure appropriate widths and heights are defined dynamically.",
+      "codeExample": "",
+      "category": "images"
     }
   ],
-  "extractedAt": "2025-07-10T23:31:24.879Z"
+  "extractedAt": "2025-07-10T23:53:15.116Z"
 }
