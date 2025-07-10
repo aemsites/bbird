@@ -104,10 +104,11 @@ jobs:
           OWNER="${{ github.repository_owner }}"
           BRANCH="${{ github.head_ref }}"
           BASE_URL="https://${OWNER}.github.io/${REPO}"
-          echo "🔗 Public CWV Report Links for Branch: $BRANCH"
-          echo "📄 Desktop Report: $BASE_URL/${BRANCH}--${REPO}--${OWNER}-aem-page.desktop.report.gpt4o.summary.md"
-          echo "📄 Mobile Report:  $BASE_URL/${BRANCH}--${REPO}--${OWNER}-aem-page.mobile.report.gpt4o.summary.md"
-          echo "🧠 Suggestions:    $BASE_URL/${BRANCH}--${REPO}--${OWNER}-aem-page.suggestions.gpt4o.json"
+          echo " Public CWV Report Links for Branch: $BRANCH"
+          echo " Desktop Report: $BASE_URL/${BRANCH}--${REPO}--${OWNER}-aem-page.desktop.report.gpt4o.summary.md"
+          echo " Mobile Report:  $BASE_URL/${BRANCH}--${REPO}--${OWNER}-aem-page.mobile.report.gpt4o.summary.md"
+          echo " Suggestions:    $BASE_URL/${BRANCH}--${REPO}--${OWNER}-aem-page.desktop.suggestions.gpt4o.json"
+          echo " Suggestions:    $BASE_URL/${BRANCH}--${REPO}--${OWNER}-aem-page.mobile.suggestions.gpt4o.json"
 
 
       - name: Print project file tree (excluding node_modules)
