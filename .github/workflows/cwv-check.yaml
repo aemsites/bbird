@@ -110,6 +110,26 @@ jobs:
           echo " Suggestions:    $BASE_URL/${BRANCH}--${REPO}--${OWNER}-aem-page.desktop.suggestions.gpt4o.json"
           echo " Suggestions:    $BASE_URL/${BRANCH}--${REPO}--${OWNER}-aem-page.mobile.suggestions.gpt4o.json"
 
+      - name: Upload Desktop Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-report
+          path: cwv-output/*.desktop.report.gpt4o.summary.md
+          if-no-files-found: error
+
+      - name: Upload Mobile Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-report
+          path: cwv-output/*.mobile.report.gpt4o.summary.md
+          if-no-files-found: error
+
+      - name: Upload Suggestions JSON
+        uses: actions/upload-artifact@v4
+        with:
+          name: suggestions-json
+          path: cwv-output/*.suggestions.gpt4o.json
+          if-no-files-found: error
 
       - name: Print project file tree (excluding node_modules)
         run: |
