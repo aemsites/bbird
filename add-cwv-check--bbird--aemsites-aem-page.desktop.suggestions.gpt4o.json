@@ -1,61 +1,49 @@
 {
   "url": "https://add-cwv-check--bbird--aemsites.aem.page/",
   "deviceType": "desktop",
-  "timestamp": "2023-11-23T20:45:00Z",
+  "timestamp": "2023-10-05T14:30:00Z",
   "summary": {
     "lcp": {
-      "current": "2.85s",
+      "current": "2.2s",
       "target": "2.5s",
-      "status": "needs-improvement"
+      "status": "good"
     },
     "cls": {
-      "current": "0.08",
+      "current": "0.05",
       "target": "0.1",
       "status": "good"
     },
     "inp": {
-      "current": "240ms",
+      "current": "278ms",
       "target": "200ms",
-      "status": "needs-improvement"
+      "status": "poor"
     }
   },
   "suggestions": [
     {
       "id": 1,
-      "title": "Optimize LCP Image Loading",
-      "description": "The main LCP element is a hero image that could benefit from optimization to improve load times.",
-      "metric": "LCP",
+      "title": "Defer Third-Party Scripts Execution",
+      "description": "The script at https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js is blocking rendering and contributes to interaction latency. Defer its loading to improve user experience.",
+      "metric": "INP",
       "priority": "High",
       "effort": "Medium",
-      "impact": "~450ms",
-      "implementation": "Modify the hero image setup in `scripts.js` or `aem.js` to apply loading='eager' and fetchpriority='high' using JavaScript.",
-      "codeExample": "img.loading = eager; img.fetchPriority = high;",
-      "category": "images"
-    },
-    {
-      "id": 2,
-      "title": "Defer Third-party Scripts",
-      "description": "The `auth0-spa-js.production.js` file is introducing significant delay in loading.",
-      "metric": "INP",
-      "priority": "Medium",
-      "effort": "Easy",
-      "impact": "~100ms",
-      "implementation": "Modify the script inclusion from the HTML head to be loaded via `loadDelayed` function in `scripts.js`.",
-      "codeExample": "loadScript('https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js', { defer: true });",
+      "impact": "150-200ms",
+      "implementation": "Defer the loading of auth0-spa-js.production.js until after the LCP. Consider using loadDelayed to load it during the delayed phase, given it’s not crucial pre-LCP.",
+      "codeExample": "",
       "category": "third-party"
     },
     {
-      "id": 3,
-      "title": "Code Splitting and Tree-Shaking",
-      "description": "Excessive unused code in `scripts.js` and `aem.js` is affecting load performance.",
-      "metric": "LCP",
-      "priority": "Medium",
+      "id": 2,
+      "title": "Optimize JavaScript Code by Removing Unused Portions",
+      "description": "Significant unused code in JavaScript files contributes to inefficient processing, affecting user interactions. Optimize code usage by pruning unused code.",
+      "metric": "INP",
+      "priority": "High",
       "effort": "Medium",
-      "impact": "~100ms",
-      "implementation": "Refactor `aem.js` and `scripts.js` to apply code splitting on heavily-used sections.",
-      "codeExample": null,
+      "impact": "80-150ms",
+      "implementation": "Perform tree-shaking and code-splitting to defer or discard unused code, particularly focusing on auth0-spa-js.production.js for pre-LCP loading.",
+      "codeExample": "",
       "category": "javascript"
     }
   ],
-  "extractedAt": "2025-07-10T23:22:35.518Z"
+  "extractedAt": "2025-07-10T23:31:24.879Z"
 }

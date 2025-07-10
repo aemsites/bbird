@@ -1,56 +1,52 @@
-## Web Performance Recommendations for `https://add-cwv-check--bbird--aemsites.aem.page/`
+## MARKDOWN REPORT
 
 ### Executive Summary
-The URL `https://add-cwv-check--bbird--aemsites.aem.page/` was tested on a desktop device. The analysis revealed opportunities for improvement in the Core Web Vitals (CWV), particularly in the Largest Contentful Paint (LCP) and Cumulative Layout Shift (CLS). The Interaction to Next Paint (INP) metric is within acceptable range but still offers room for improvement.
 
-Summary of Key Metrics:
-- **LCP**: Current value is approximately 2.85s. Target is under 2.5s for improved performance.
-- **CLS**: Current value is 0.08, which is below the threshold of 0.1 but could still see minor adjustments.
-- **INP**: Current value is 240ms, which exceeds the target of 200ms.
+- **Tested URL:** https://add-cwv-check--bbird--aemsites.aem.page/
+- **Current State:**
+  - Largest Contentful Paint (LCP): 2.2s (meets threshold)
+  - Cumulative Layout Shift (CLS): 0.05 (meets threshold)
+  - Interaction to Next Paint (INP): 278ms (failing)
+- **Device Type:** Desktop
+- **Key Bottlenecks:**
+  - Render-blocking resources
+  - Inefficient code usage and unnecessary third-party scripts affecting INP
+  - Non-critical resources affecting script execution
 
-### Prioritized Recommendations Table
+### Prioritized Recommendations
 
-| Impact  | Complexity | Affected Metric(s) | Expected Improvement |
-|---------|------------|--------------------|----------------------|
-| High    | Medium     | LCP                | ~450ms               |
-| Medium  | Easy       | INP                | ~100ms               |
-| Medium  | Medium     | LCP, INP           | ~100ms               |
+| Impact Rating | Implementation Complexity | Affected Metric(s) | Expected Improvement Range |
+|---------------|---------------------------|--------------------|---------------------------|
+| High          | Medium                    | INP                | 150-200ms                 |
+| Medium        | Easy                      | INP                | 80-150ms                  |
 
 ### Detailed Technical Recommendations
 
-#### 1. Optimize LCP Image Loading
-**Description**: The main LCP element is a hero image that could benefit from optimization to improve load times.
-**Priority**: High
-**Effort**: Medium
-**Impact**: LCP improvement of up to 450ms
-**Recommendation**: Instead of relying solely on lazy loading, ensure that the LCP image is loaded eagerly using JavaScript with `loading="eager"` and `fetchpriority="high"`. Ensure the proper use of `srcset` for different resolutions.
-**Implementation**: Modify the hero image setup in `scripts.js` or `aem.js` to apply these attributes through the `createOptimizedPicture` function.
+#### 1. Defer Third-Party Scripts Execution
 
-#### 2. Defer Third-party Scripts
-**Description**: The `auth0-spa-js.production.js` file is introducing significant delay in loading.
-**Priority**: Medium
-**Effort**: Easy
-**Impact**: INP improvement of ~100ms
-**Recommendation**: Defer loading of this third-party script to the delayed phase, or move it to run after the LCP phase. Consider using defer pattern if applicable.
-**Implementation**: Modify the script inclusion from being directly in the HTML head to being loaded via a `loadDelayed` function in `scripts.js`.
+- **Description:** The script `https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js` is blocking the rendering path and adds unnecessary complexity to the execution phase. It is contributing significantly to the interaction latency.
+- **Implementation Priority:** High
+- **Implementation Effort:** Medium
+- **Expected Impact on Metrics:** 150-200ms improvement in INP
+- **Implementation Details:** Defer the loading of `auth0-spa-js.production.js` until after the LCP. Consider using `loadDelayed` to load it during the delayed phase, given it’s not crucial pre-LCP.
+  - **Category:** Third-party
 
-#### 3. Code Splitting and Tree-Shaking
-**Description**: Excessive unused code in `scripts.js` and `aem.js` is affecting load performance.
-**Priority**: Medium
-**Effort**: Medium
-**Impact**: LCP and INP improvements of ~100ms
-**Recommendation**: Implement code splitting and tree-shaking to ensure only the necessary components are loaded initially.
-**Implementation**: Analyze heavily-used vs rarely-used components along with critical and non-critical path components, refactor `aem.js` and `scripts.js` to split or remove unused functions, ensuring code splitting is applied where larger non-critical scripts are initiated in the `loadDelayed` phase.
+#### 2. Optimize JavaScript Code by Removing Unused Portions
+
+- **Description:** Several unused JavaScript portions (around 42% unused in the critical section) add unnecessary load to the browser, affecting user interactions negatively.
+- **Implementation Priority:** High
+- **Implementation Effort:** Medium
+- **Expected Impact on Metrics:** 80-150ms improvement in INP
+- **Implementation Details:** Perform tree-shaking and code-splitting to defer or discard unused code. Particularly, `auth0-spa-js.production.js` shows a high portion of unused code, which should be reviewed and pruned.
+  - **Category:** JavaScript
 
 ### Implementation Roadmap
 
-#### Quick Wins
-- **Defer Third-party Scripts**: Adjust the loading pattern of `auth0-spa-js.production.js`.
-- **Image Optimization**: Use fetchpriority in JavaScript for critical LCP images.
-
-#### Strategic Improvements
-- **Code Splitting**: Implement more advanced code splitting focused on long-term maintainability.
-- **Tree Shaking**: Analyze and prune unused functions across larger script files.
+1. **Quick Wins:**
+   - **Defer Third-Party Scripts:** Focus on deferring non-critical scripts like `auth0-spa-js.production.js` immediately. This can bring immediate improvements in INP.
+  
+2. **Strategic Improvements:**
+   - **Optimize JavaScript Code:** Conduct a thorough review and apply tree-shaking methodologies in the JavaScript files, particularly targeting those loading pre-LCP.
 
 ---
 
@@ -60,49 +56,39 @@ Summary of Key Metrics:
 {
   "url": "https://add-cwv-check--bbird--aemsites.aem.page/",
   "deviceType": "desktop",
-  "timestamp": "2023-11-23T20:45:00Z",
+  "timestamp": "2023-10-05T14:30:00Z",
   "summary": {
-    "lcp": { "current": "2.85s", "target": "2.5s", "status": "needs-improvement" },
-    "cls": { "current": "0.08", "target": "0.1", "status": "good" },
-    "inp": { "current": "240ms", "target": "200ms", "status": "needs-improvement" }
+    "lcp": { "current": "2.2s", "target": "2.5s", "status": "good" },
+    "cls": { "current": "0.05", "target": "0.1", "status": "good" },
+    "inp": { "current": "278ms", "target": "200ms", "status": "poor" }
   },
   "suggestions": [
     {
       "id": 1,
-      "title": "Optimize LCP Image Loading",
-      "description": "The main LCP element is a hero image that could benefit from optimization to improve load times.",
-      "metric": "LCP",
+      "title": "Defer Third-Party Scripts Execution",
+      "description": "The script at https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js is blocking rendering and contributes to interaction latency. Defer its loading to improve user experience.",
+      "metric": "INP",
       "priority": "High",
       "effort": "Medium",
-      "impact": "~450ms",
-      "implementation": "Modify the hero image setup in `scripts.js` or `aem.js` to apply loading='eager' and fetchpriority='high' using JavaScript.",
-      "codeExample": "img.loading = eager; img.fetchPriority = high;",
-      "category": "images"
-    },
-    {
-      "id": 2,
-      "title": "Defer Third-party Scripts",
-      "description": "The `auth0-spa-js.production.js` file is introducing significant delay in loading.",
-      "metric": "INP",
-      "priority": "Medium",
-      "effort": "Easy",
-      "impact": "~100ms",
-      "implementation": "Modify the script inclusion from the HTML head to be loaded via `loadDelayed` function in `scripts.js`.",
-      "codeExample": "loadScript('https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js', { defer: true });",
+      "impact": "150-200ms",
+      "implementation": "Defer the loading of auth0-spa-js.production.js until after the LCP. Consider using loadDelayed to load it during the delayed phase, given it’s not crucial pre-LCP.",
+      "codeExample": "",
       "category": "third-party"
     },
     {
-      "id": 3,
-      "title": "Code Splitting and Tree-Shaking",
-      "description": "Excessive unused code in `scripts.js` and `aem.js` is affecting load performance.",
-      "metric": "LCP",
-      "priority": "Medium",
+      "id": 2,
+      "title": "Optimize JavaScript Code by Removing Unused Portions",
+      "description": "Significant unused code in JavaScript files contributes to inefficient processing, affecting user interactions. Optimize code usage by pruning unused code.",
+      "metric": "INP",
+      "priority": "High",
       "effort": "Medium",
-      "impact": "~100ms",
-      "implementation": "Refactor `aem.js` and `scripts.js` to apply code splitting on heavily-used sections.",
-      "codeExample": null,
+      "impact": "80-150ms",
+      "implementation": "Perform tree-shaking and code-splitting to defer or discard unused code, particularly focusing on auth0-spa-js.production.js for pre-LCP loading.",
+      "codeExample": "",
       "category": "javascript"
     }
   ]
 }
 ```
+
+This analysis identifies specific potential improvements while taking into account the existing configuration and development constraints. By strategically targeting the outlined areas, the page can achieve better performance and user satisfaction.

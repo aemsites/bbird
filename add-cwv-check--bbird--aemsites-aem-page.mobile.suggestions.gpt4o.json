@@ -1,97 +1,85 @@
 {
   "url": "https://add-cwv-check--bbird--aemsites.aem.page/",
   "deviceType": "mobile",
-  "timestamp": "2023-10-11T10:00:00Z",
+  "timestamp": "2023-10-10T09:00:00Z",
   "summary": {
     "lcp": {
-      "current": "3540ms",
+      "current": "3.424s",
       "target": "2.5s",
       "status": "needs-improvement"
     },
     "cls": {
-      "current": "0.085",
+      "current": "data-unavailable",
       "target": "0.1",
-      "status": "good"
+      "status": "data-unavailable"
     },
     "inp": {
-      "current": "not available",
+      "current": "data-unavailable",
       "target": "200ms",
-      "status": "not assessed"
+      "status": "data-unavailable"
     }
   },
   "suggestions": [
     {
       "id": 1,
-      "title": "Optimize Critical Rendering Path for LCP",
-      "description": "The LCP element's load time is significantly delayed due to render-blocking resources and inefficient loading.",
+      "title": "Defer Non-Critical JS Files",
+      "description": "Many non-critical JS files (e.g., `auth0-spa-js.production.js`, `video.js`) have a significant unused portion pre-LCP.",
       "metric": "LCP",
       "priority": "High",
       "effort": "Medium",
-      "impact": ">500ms reduction in LCP",
-      "implementation": "Ensure all critical CSS and JS are minimized and loaded in a non-blocking manner. Use `loadEager` for the immediate loading of high-priority elements.",
-      "codeExample": "",
+      "impact": "800ms - 1s",
+      "implementation": "Code splitting can ensure that only essential parts load initially. Deter loading of non-essential scripts until after the principal content has appeared.",
+      "codeExample": "Use dynamic imports or conditional loading patterns.",
       "category": "javascript"
     },
     {
       "id": 2,
-      "title": "Defer Third-Party and Unused Scripts",
-      "description": "The auth0-spa-js.production.js script and other unused parts of scripts are affecting load performance.",
-      "metric": "INP",
+      "title": "Optimize Critical Path Rendering",
+      "description": "Large image is causing delayed LCP.",
+      "metric": "LCP",
       "priority": "High",
-      "effort": "Hard",
-      "impact": ">100ms reduction in INP",
-      "implementation": "Implement a conditional loading strategy for third-party scripts, ensuring they're loaded only when necessary. Engage in code-splitting to remove unused parts.",
-      "codeExample": "",
-      "category": "third-party"
+      "effort": "Medium",
+      "impact": "up to 500ms",
+      "implementation": "Eager-load critical images. Utilize `fetchpriority` high in JavaScript to prioritize downloading crucial images.",
+      "codeExample": "image.setAttribute('loading', 'eager'); image.setAttribute('fetchpriority', 'high');",
+      "category": "images"
     },
     {
       "id": 3,
-      "title": "Tree Shaking and Code Splitting",
-      "description": "JavaScript code contains significant unused portions, contributing to high TBT.",
-      "metric": "TBT",
-      "priority": "High",
+      "title": "Remove Long Task from `scripts.js`",
+      "description": "`scripts.js` induces long tasks impacting INP.",
+      "metric": "INP",
+      "priority": "Medium",
       "effort": "Medium",
-      "impact": ">200ms reduction in TBT",
-      "implementation": "Implement tree shaking and split code by breaking down auth0-spa-js and other similar scripts to ensure only the critical parts are loaded diligently.",
-      "codeExample": "",
+      "impact": "100ms - 300ms",
+      "implementation": "Break down long tasks using `requestIdleCallback` or similar to help yield control of the main thread.",
+      "codeExample": "function longTask() { /* some process */ } requestIdleCallback(longTask);",
       "category": "javascript"
     },
     {
       "id": 4,
-      "title": "Enhance Image Delivery Tactics",
-      "description": "Improper image delivery affecting LCP.",
-      "metric": "LCP",
+      "title": "Reprioritize CSS",
+      "description": "Stylesheet loading blocking critical rendering.",
+      "metric": "General Performance",
       "priority": "Medium",
       "effort": "Easy",
-      "impact": "~300ms reduction in LCP",
-      "implementation": "Use fetchpriority='high' and ensure proper dimensions are defined for all LCP images",
+      "impact": "50ms",
+      "implementation": "Defer lower priority CSS to `lazy-styles.css`.",
       "codeExample": "",
-      "category": "images"
+      "category": "css"
     },
     {
       "id": 5,
-      "title": "Address Long Task Durations",
-      "description": "Scripts causing long tasks are impeding responsiveness.",
-      "metric": "INP",
-      "priority": "High",
-      "effort": "Medium",
-      "impact": ">150ms reduction in INP",
-      "implementation": "Refactor event handlers and consider leveraging APIs like window.requestIdleCallback for non-critical tasks.",
+      "title": "Self-Host Third-Party Resources",
+      "description": "External resources causing delays due to separate domain loading.",
+      "metric": "General Performance",
+      "priority": "Low",
+      "effort": "Hard",
+      "impact": "Improved TTFB, slight LCP/INP improvement",
+      "implementation": "Consider self-hosting scripts like those from the Auth0 domain.",
       "codeExample": "",
-      "category": "javascript"
-    },
-    {
-      "id": 6,
-      "title": "Preconnect and Preload Strategy",
-      "description": "Optimize resource fetching with HTTP/2 features.",
-      "metric": "TTFB",
-      "priority": "Medium",
-      "effort": "Medium",
-      "impact": "~200ms reduction in TTFB",
-      "implementation": "Implement DNS prefetch and preload strategies for critical domains.",
-      "codeExample": "",
-      "category": "network"
+      "category": "third-party"
     }
   ],
-  "extractedAt": "2025-07-10T23:21:37.003Z"
+  "extractedAt": "2025-07-10T23:30:53.130Z"
 }
