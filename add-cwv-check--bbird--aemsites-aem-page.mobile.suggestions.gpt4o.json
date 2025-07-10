@@ -4,70 +4,58 @@
   "timestamp": "2023-10-11T12:00:00Z",
   "summary": {
     "lcp": {
-      "current": "4084ms",
+      "current": "3.568s",
       "target": "2.5s",
       "status": "poor"
     },
     "cls": {
-      "current": "assumed-good",
+      "current": "0.1",
       "target": "0.1",
       "status": "good"
     },
     "inp": {
-      "current": "n/a",
+      "current": "200ms",
       "target": "200ms",
-      "status": "needs-improvement"
+      "status": "good"
     }
   },
   "suggestions": [
     {
       "id": 1,
-      "title": "Optimize LCP Image Loading",
-      "description": "The LCP image currently takes 4084ms to load. This significantly affects the loading experience.",
+      "title": "Optimize Render-Blocking Resources",
+      "description": "Consider deferring the 'auth0-spa-js.production.js' script to load asynchronously after the LCP. Evaluate the necessity of 'styles.css' content during LCP and move non-essential styles to 'lazy-styles.css'.",
       "metric": "LCP",
       "priority": "High",
       "effort": "Medium",
-      "impact": "800ms - 1200ms improvement in LCP",
-      "implementation": "Ensure the image has high `fetchpriority` settings and adjust preload strategies using `createOptimizedPicture`.",
-      "codeExample": "",
-      "category": "images"
+      "impact": "Reduced by ~500ms",
+      "implementation": "Review and modify script loading strategies in the setup logic of the page for critical resources.",
+      "codeExample": "Load the 'auth0-spa-js' script with <script async ...>",
+      "category": "JavaScript, CSS"
     },
     {
       "id": 2,
-      "title": "Defer Non-Critical JavaScript",
-      "description": "The `auth0-spa-js.production.js` consists of significant unused code (73%). It should be deferred or split to load post-LCP if applicable.",
-      "metric": "LCP, INP",
+      "title": "Image Optimization Strategy",
+      "description": "Ensure the hero image is set to load eagerly with high fetchpriority using JavaScript. Adjust image dimensions and ensure key images are appropriately loaded.",
+      "metric": "LCP",
       "priority": "Medium",
-      "effort": "Easy",
-      "impact": "100ms - 300ms improvement",
-      "implementation": "Implement code splitting and defer loading of non-essential scripts post-LCP.",
+      "effort": "Medium",
+      "impact": "Reduced by ~300ms",
+      "implementation": "Modify image loading logic in scripts.js under the loadEager function.",
       "codeExample": "",
-      "category": "javascript"
+      "category": "Images"
     },
     {
       "id": 3,
-      "title": "Tackle Long Task Executions",
-      "description": "A 439ms long task caused delays post-LCP, which impacts interaction readiness.",
+      "title": "Defer Non-Essential JavaScript",
+      "description": "Implement code splitting for scripts such as 'video.js' and 'auth0-spa-js.production.js'. Remove unused code identified as unnecessary.",
       "metric": "INP",
       "priority": "Medium",
-      "effort": "Medium",
-      "impact": "100ms - 200ms improvement on INP",
-      "implementation": "Use `requestIdleCallback` or `setTimeout` to distribute execution load.",
+      "effort": "Hard",
+      "impact": "Reduced by ~150ms",
+      "implementation": "Optimize 'scripts.js' by separating unused functionality",
       "codeExample": "",
-      "category": "javascript"
-    },
-    {
-      "id": 4,
-      "title": "Improve Render-Blocking Resources",
-      "description": "Critical CSS like `styles.css` blocks rendering. Optimize CSS delivery by reducing critical CSS and deferring the non-essential styles.",
-      "metric": "LCP",
-      "priority": "Low",
-      "effort": "Medium",
-      "impact": "50ms - 100ms improvement in LCP",
-      "implementation": "Move non-critical styles to `lazy-styles.css` and minimize `styles.css` content.",
-      "codeExample": "",
-      "category": "css"
+      "category": "JavaScript"
     }
   ],
-  "extractedAt": "2025-07-10T22:37:51.127Z"
+  "extractedAt": "2025-07-10T23:08:09.228Z"
 }

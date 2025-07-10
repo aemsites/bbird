@@ -1,73 +1,61 @@
 {
   "url": "https://add-cwv-check--bbird--aemsites.aem.page/",
   "deviceType": "desktop",
-  "timestamp": "2023-10-26T10:00:00.000Z",
+  "timestamp": "2023-10-12T12:00:00Z",
   "summary": {
     "lcp": {
       "current": "304ms",
       "target": "2.5s",
-      "status": "poor"
+      "status": "needs-improvement"
     },
     "cls": {
-      "current": "0.04",
+      "current": "0.00",
       "target": "0.1",
       "status": "good"
     },
     "inp": {
       "current": "250ms",
       "target": "200ms",
-      "status": "poor"
+      "status": "needs-improvement"
     }
   },
   "suggestions": [
     {
       "id": 1,
-      "title": "Optimize Image Delivery",
-      "description": "Ensure the LCP image is optimized for size and loaded with high priority to reduce load time.",
+      "title": "Optimize Third-Party Script Loading",
+      "description": "The auth0-spa-js third-party script causes render-blocking and delays in reaching LCP. It introduces unnecessary processing pre-LCP due to significant unused code.",
       "metric": "LCP",
       "priority": "High",
       "effort": "Medium",
-      "impact": "240ms to 260ms",
-      "implementation": "Set image loading strategy using JavaScript adjustments to the attribute. Adjust width/height settings.",
-      "codeExample": "document.querySelector('img').setAttribute('loading', 'eager');",
-      "category": "images"
-    },
-    {
-      "id": 2,
-      "title": "Preload and Prioritize Critical CSS",
-      "description": "Reduce blocking CSS by splitting styles into critical and lazy-loaded, improving first-render time.",
-      "metric": "LCP",
-      "priority": "Medium",
-      "effort": "Medium",
-      "impact": "120ms",
-      "implementation": "Use HTTP Preload headers for key styles, and lazy-load less critical ones with conditional imports.",
-      "codeExample": "<link rel='preload' href='/styles/critical-styles.css' as='style'>",
-      "category": "css"
-    },
-    {
-      "id": 3,
-      "title": "Defer Third-party Scripts",
-      "description": "Convert blocking third-party scripts to asynchronous loading to prevent unnecessary blocking of main thread.",
-      "metric": "INP",
-      "priority": "High",
-      "effort": "Medium",
-      "impact": "100ms",
-      "implementation": "Add 'defer' or 'async' attributes to third-party script tags where possible.",
-      "codeExample": "<script src='https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js' async></script>",
+      "impact": "400ms - 600ms improvement on LCP",
+      "implementation": "Self-host auth0-spa-js library to reduce DNS lookup times. Consider code splitting to load only critical code pre-LCP, and defer non-essential functionalities. Evaluate possibility of making this resource non-blocking.",
+      "codeExample": "",
       "category": "third-party"
     },
     {
-      "id": 4,
-      "title": "Code Splitting and Unused Code Removal",
-      "description": "Identify unused code in large libraries and either remove or defer their loading to post-initial interactions.",
-      "metric": "INP",
+      "id": 2,
+      "title": "Reduce and Normalize Image Sizes",
+      "description": "Multiple large images are loaded with dimensions exceeding device-specific requirements, impacting load times significantly.",
+      "metric": "LCP",
       "priority": "Medium",
       "effort": "Medium",
-      "impact": "Reduction in INP timings",
-      "implementation": "Implement tools for tree-shaking unused code, and split large modules to load conditionally.",
-      "codeExample": "if(condition){ import('./block.js').then(module => module.default()); }",
-      "category": "javascript"
+      "impact": "200ms - 300ms improvement in LCP",
+      "implementation": "Use srcset attribute with appropriately sized images for different viewports to minimize excessive image loading.",
+      "codeExample": "",
+      "category": "images"
+    },
+    {
+      "id": 3,
+      "title": "Restructure CSS and JS Loading Strategies",
+      "description": "There is potential to defer non-critical styling and scripts using lazy-styles.css and loadDelayed.",
+      "metric": "LCP",
+      "priority": "Low",
+      "effort": "Easy",
+      "impact": "Up to 50ms - 100ms improvement in LCP",
+      "implementation": "Ensure that lazy-styles.css contains only non-critical CSS. Utilize ‘loadEager’ to optimize the sequence of styling and functional scripts loaded in the critical path.",
+      "codeExample": "",
+      "category": "css"
     }
   ],
-  "extractedAt": "2025-07-10T22:38:38.563Z"
+  "extractedAt": "2025-07-10T23:08:47.161Z"
 }

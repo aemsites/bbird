@@ -1,71 +1,53 @@
-### MARKDOWN REPORT
+## MARKDOWN REPORT
 
-# Performance Analysis and Recommendations for `https://add-cwv-check--bbird--aemsites.aem.page/`
+### Executive Summary
 
-## Executive Summary
+**URL:** https://add-cwv-check--bbird--aemsites.aem.page/  
+**Device Type:** Desktop
 
-For the page `https://add-cwv-check--bbird--aemsites.aem.page/`, on a desktop device, there are significant opportunities to improve Core Web Vitals, particularly regarding Largest Contentful Paint (LCP) and Interaction to Next Paint (INP). Efforts should focus on optimizing image delivery, managing blocking resources, and efficient loading of third-party scripts.
+During the performance analysis of the provided URL, significant bottlenecks were identified that affect Core Web Vitals metrics, particularly Largest Contentful Paint (LCP) and Interaction to Next Paint (INP). The primary issues relate to render-blocking resources from third parties, excessive image sizes affecting load time, and inefficient JavaScript loading strategies.
 
-### Key Metrics:
-- **LCP:** 304ms (suboptimal due to blocking resources)
-- **CLS:** Below threshold
-- **INP:** Around 250ms (affected by blocking scripts and unused code)
+### Prioritized Recommendations
 
-### Impact Estimates:
-- **LCP:** Reduce by 240ms through resource prioritization
-- **CLS:** Already within the threshold
-- **INP:** Improve by about 100ms by deferring and optimizing heavy scripts
+| Impact Rating | Implementation Complexity | Affected Metrics | Expected Improvement Range |
+|---------------|---------------------------|------------------|---------------------------|
+| High          | Medium                    | LCP, INP         | 400ms - 600ms for LCP, 100ms - 150ms for INP |
+| Medium        | Medium                    | LCP              | 200ms - 300ms for LCP |
+| Low           | Easy                      | LCP              | 50ms - 100ms for LCP |
 
-## Prioritized Recommendations Table
+### Detailed Technical Recommendations
 
-| Impact | Complexity | Affected Metric(s) | Expected Improvement |
-|--------|------------|--------------------|----------------------|
-| High   | Medium     | LCP, INP           | 240ms to 350ms       |
-| Medium | Easy       | INP                | 100ms                |
+#### 1. Optimize Third-Party Script Loading
+- **Description:** The `auth0-spa-js` third-party script causes render-blocking and delays in reaching the LCP. It introduces unnecessary processing pre-LCP due to significant unused code.
+- **Implementation Priority:** High
+- **Implementation Effort:** Medium
+- **Expected Impact on Metrics:** Could improve LCP by up to 400ms and reduce INP delays by at least 100ms.
+- **Technical Details:** Self-host the `auth0-spa-js` library to reduce DNS lookup times. Consider code splitting to load only critical code pre-LCP, and defer non-essential functionalities. Also, evaluate the possibility of making this resource non-blocking.
 
-## Detailed Technical Recommendations
+#### 2. Reduce and Normalize Image Sizes
+- **Description:** Multiple large images are loaded with dimensions exceeding device-specific requirements, impacting load times significantly.
+- **Implementation Priority:** Medium
+- **Implementation Effort:** Medium
+- **Expected Impact on Metrics:** Can lead to a 200ms to 300ms improvement in LCP.
+- **Technical Details:** Use srcset with appropriately sized images for different viewports. This minimizes excessive image loading, particularly noticeable in `media_135c088daec31dac9b04841b921be997b4ac4381a.jpg`.
 
-### LCP Improvements
+#### 3. Restructure CSS and JS Loading Strategies
+- **Description:** There is potential to defer non-critical styling and scripts using `lazy-styles.css` and `loadDelayed`.
+- **Implementation Priority:** Low
+- **Implementation Effort:** Easy
+- **Expected Impact on Metrics:** Up to 50ms - 100ms improvement in LCP.
+- **Technical Details:** Ensure that `lazy-styles.css` contains only non-critical CSS. Utilize ‘loadEager’ to optimize the sequence of styling and functional scripts loaded in the critical path.
 
-#### 1. Optimize Image Delivery
-- **Description:** The LCP element image is large and not optimally served. Ensure loading priority settings are correct and the image is rightly sized.
-- **Priority:** High
-- **Effort:** Medium
-- **Impact on Metrics:** Potential improvement in LCP by approximately 240ms to 260ms by optimizing image load path.
-- **Implementation:** Set the image to load with high `fetchPriority`, load eagerly using JavaScript amendments to the attribute, and ensure width/height attributes are accurately set.
+### Implementation Roadmap
 
-#### 2. Preload and Prioritize Critical CSS
-- **Description:** Critical CSS in `styles.css` is blocking and could be deferred or reduced in size.
-- **Priority:** Medium
-- **Effort:** Medium
-- **Impact on Metrics:** LCP and some render times can improve by approximately 120ms.
-- **Implementation:** Optimize `styles.css` to split critical and lazy-loaded styles, ensure preloads are set in the HTTP headers for critical paths.
+1. **Quick Wins**
+   - Analyze and validate the impact of the immediate removal or deferment of non-essential functions within third-party scripts.
 
-### INP Improvements
+2. **Strategic Improvements**
+   - Implement optimized loading for third-party libraries, emphasizing local caching and modular loading.
+   - Review and refactor image assets, ensuring that all images are properly sized as per viewport requirements.
 
-#### 3. Defer Third-party Scripts
-- **Description:** The `auth0-spa-js` script is currently non-critical but blocking. Defer or download asynchronously.
-- **Priority:** High
-- **Effort:** Medium
-- **Impact on Metrics:** INP could improve by up to 100ms with strategic deferral.
-- **Implementation:** Implement script deferral or asynchronous strategy with conditions ensuring it runs only when required post-initial interactive phases.
-
-#### 4. Code Splitting and Unused Code Removal
-- **Description:** Files like `video.js` and certain utilities have substantial unused code that can be cleaned up or deferred.
-- **Priority:** Medium
-- **Effort:** Medium
-- **Impact on Metrics:** INP and overall interactive performance could significantly improve by cleaning and splitting code.
-- **Implementation:** Undertake a refactor for major blocks/sections—`video.js`—to split logic into smaller chunks and only load as needed.
-
-## Implementation Roadmap
-
-### Quick Wins:
-- Immediate adjustments to third-party scripts to load asynchronously.
-- Ensure fetch priority on all above-the-fold images.
-
-### Strategic Improvements:
-- Refactor codebase for critical path optimization, ensuring code is modular and easily deferrable.
-- Implement scheduled regular audits (using tools like PSI and Lighthouse) post-optimizations to track improvements and further refine strategies.
+By prioritizing these tasks, we can expect to see substantial improvements in the loading speeds and user experience, particularly in reducing the time it takes to display the main page contents and enhancing input responsiveness.
 
 ---
 
@@ -75,61 +57,51 @@ For the page `https://add-cwv-check--bbird--aemsites.aem.page/`, on a desktop de
 {
   "url": "https://add-cwv-check--bbird--aemsites.aem.page/",
   "deviceType": "desktop",
-  "timestamp": "2023-10-26T10:00:00.000Z",
+  "timestamp": "2023-10-12T12:00:00Z",
   "summary": {
-    "lcp": { "current": "304ms", "target": "2.5s", "status": "poor" },
-    "cls": { "current": "0.04", "target": "0.1", "status": "good" },
-    "inp": { "current": "250ms", "target": "200ms", "status": "poor" }
+    "lcp": { "current": "304ms", "target": "2.5s", "status": "needs-improvement" },
+    "cls": { "current": "0.00", "target": "0.1", "status": "good" },
+    "inp": { "current": "250ms", "target": "200ms", "status": "needs-improvement" }
   },
   "suggestions": [
     {
       "id": 1,
-      "title": "Optimize Image Delivery",
-      "description": "Ensure the LCP image is optimized for size and loaded with high priority to reduce load time.",
+      "title": "Optimize Third-Party Script Loading",
+      "description": "The auth0-spa-js third-party script causes render-blocking and delays in reaching LCP. It introduces unnecessary processing pre-LCP due to significant unused code.",
       "metric": "LCP",
       "priority": "High",
       "effort": "Medium",
-      "impact": "240ms to 260ms",
-      "implementation": "Set image loading strategy using JavaScript adjustments to the attribute. Adjust width/height settings.",
-      "codeExample": "document.querySelector('img').setAttribute('loading', 'eager');",
-      "category": "images"
-    },
-    {
-      "id": 2,
-      "title": "Preload and Prioritize Critical CSS",
-      "description": "Reduce blocking CSS by splitting styles into critical and lazy-loaded, improving first-render time.",
-      "metric": "LCP",
-      "priority": "Medium",
-      "effort": "Medium",
-      "impact": "120ms",
-      "implementation": "Use HTTP Preload headers for key styles, and lazy-load less critical ones with conditional imports.",
-      "codeExample": "<link rel='preload' href='/styles/critical-styles.css' as='style'>",
-      "category": "css"
-    },
-    {
-      "id": 3,
-      "title": "Defer Third-party Scripts",
-      "description": "Convert blocking third-party scripts to asynchronous loading to prevent unnecessary blocking of main thread.",
-      "metric": "INP",
-      "priority": "High",
-      "effort": "Medium",
-      "impact": "100ms",
-      "implementation": "Add 'defer' or 'async' attributes to third-party script tags where possible.",
-      "codeExample": "<script src='https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js' async></script>",
+      "impact": "400ms - 600ms improvement on LCP",
+      "implementation": "Self-host auth0-spa-js library to reduce DNS lookup times. Consider code splitting to load only critical code pre-LCP, and defer non-essential functionalities. Evaluate possibility of making this resource non-blocking.",
+      "codeExample": "",
       "category": "third-party"
     },
     {
-      "id": 4,
-      "title": "Code Splitting and Unused Code Removal",
-      "description": "Identify unused code in large libraries and either remove or defer their loading to post-initial interactions.",
-      "metric": "INP",
+      "id": 2,
+      "title": "Reduce and Normalize Image Sizes",
+      "description": "Multiple large images are loaded with dimensions exceeding device-specific requirements, impacting load times significantly.",
+      "metric": "LCP",
       "priority": "Medium",
       "effort": "Medium",
-      "impact": "Reduction in INP timings",
-      "implementation": "Implement tools for tree-shaking unused code, and split large modules to load conditionally.",
-      "codeExample": "if(condition){ import('./block.js').then(module => module.default()); }",
-      "category": "javascript"
+      "impact": "200ms - 300ms improvement in LCP",
+      "implementation": "Use srcset attribute with appropriately sized images for different viewports to minimize excessive image loading.",
+      "codeExample": "",
+      "category": "images"
+    },
+    {
+      "id": 3,
+      "title": "Restructure CSS and JS Loading Strategies",
+      "description": "There is potential to defer non-critical styling and scripts using lazy-styles.css and loadDelayed.",
+      "metric": "LCP",
+      "priority": "Low",
+      "effort": "Easy",
+      "impact": "Up to 50ms - 100ms improvement in LCP",
+      "implementation": "Ensure that lazy-styles.css contains only non-critical CSS. Utilize ‘loadEager’ to optimize the sequence of styling and functional scripts loaded in the critical path.",
+      "codeExample": "",
+      "category": "css"
     }
   ]
 }
 ```
+
+These recommendations focus on addressing specific and impactful improvements that can be made to improve the user experience and boost Core Web Vitals scores, especially for LCP and INP metrics.
