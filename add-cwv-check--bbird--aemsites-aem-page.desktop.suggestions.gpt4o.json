@@ -1,85 +1,61 @@
 {
   "url": "https://add-cwv-check--bbird--aemsites.aem.page/",
   "deviceType": "desktop",
-  "timestamp": "2023-10-05T10:00:00Z",
+  "timestamp": "2023-11-27T13:13:00Z",
   "summary": {
     "lcp": {
-      "current": "3.52s",
+      "current": "3.5s",
       "target": "2.5s",
       "status": "poor"
     },
     "cls": {
-      "current": "0.15",
+      "current": "0.05",
       "target": "0.1",
-      "status": "needs-improvement"
+      "status": "good"
     },
     "inp": {
-      "current": "250ms",
+      "current": "320ms",
       "target": "200ms",
-      "status": "needs-improvement"
+      "status": "poor"
     }
   },
   "suggestions": [
     {
       "id": 1,
-      "title": "Optimize Largest Contentful Paint Image Loading",
-      "description": "The largest image on your page, the LCP element, isn't optimally loaded, affecting your LCP metric. This can be improved by setting a high fetch priority for this image and ensuring the rendering engine knows its importance early.",
-      "metric": "LCP",
-      "priority": "High",
-      "effort": "Easy",
-      "impact": "300-400ms",
-      "implementation": "Use JavaScript to dynamically set fetch priority to high for the LCP image.",
-      "codeExample": "document.querySelector('img').setAttribute('fetchpriority', 'high');",
-      "category": "images"
-    },
-    {
-      "id": 2,
-      "title": "Deferral of Non-Critical Third-Party Scripts",
-      "description": "The `auth0-spa-js.production.js` script is loaded too early and contributes to rendering delay. It should be moved to a non-blocking execution post-LCP.",
+      "title": "Optimize Critical Image Loading",
+      "description": "Enhance load performance for LCP elements via improved fetch priorities.",
       "metric": "LCP",
       "priority": "High",
       "effort": "Medium",
-      "impact": "150ms",
-      "implementation": "Load the script asynchronously during the loadDelayed phase.",
-      "codeExample": "function loadDelayed() { window.setTimeout(() => { import('./delayed.js'); loadScript('https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js', { async: true }); }, 3000); }",
-      "category": "third-party"
-    },
-    {
-      "id": 3,
-      "title": "Implement Code Splitting for Auth0 JavaScript",
-      "description": "The `auth0-spa-js.production.js` file contains a significant amount of unused code pre-LCP, which increases the resource blocking time.",
-      "metric": "INP",
-      "priority": "Medium",
-      "effort": "Hard",
-      "impact": "100ms",
-      "implementation": "Consider refactoring this script into smaller, more focused modules that can be loaded as needed.",
+      "impact": "Improve LCP by at least 500ms",
+      "implementation": "Use JavaScript to set high fetchpriority on crucial images within 'scripts.js'.",
       "codeExample": "",
       "category": "javascript"
     },
     {
-      "id": 4,
-      "title": "Optimize CSS Delivery",
-      "description": "Some CSS is render-blocking, which delays LCP. Ensure only critical CSS is included in the render path, and move other styles to `lazy-styles.css`.",
-      "metric": "LCP",
-      "priority": "Medium",
-      "effort": "Medium",
-      "impact": "100ms",
-      "implementation": "Refactor `styles.css` by moving non-critical styles to `lazy-styles.css` and ensuring only necessary styles are initially loaded.",
-      "codeExample": "",
-      "category": "css"
+      "id": 2,
+      "title": "Address Unused JavaScript",
+      "description": "Significantly reduce unused JavaScript code by integrating tree shaking in the build process.",
+      "metric": "INP",
+      "priority": "High",
+      "effort": "Hard",
+      "impact": "Expected INP improvement of at least 100ms",
+      "implementation": "Utilize tree shaking and code-splitting techniques for scripts, especially for 'auth0-spa-js'.",
+      "codeExample": "async function loadDeferredScripts() { const deferredScripts = ['auth0-spa-js/2.0/auth0-spa-js.production.js']; deferredScripts.forEach(async src => { await loadScript(src, { async: true }); }); } loadDeferredScripts();",
+      "category": "javascript"
     },
     {
-      "id": 5,
-      "title": "Reduce Cumulative Layout Shift by Defining Image Dimensions",
-      "description": "Images on the page do not explicitly specify dimensions, contributing to layout shifts. Each image must have defined width and height attributes or aspect ratios.",
-      "metric": "CLS",
-      "priority": "High",
+      "id": 3,
+      "title": "Defer Non-essential Third-Party Scripts",
+      "description": "Shift 'auth0-spa-js' scripts found early in execution to deferred loading when possible.",
+      "metric": "INP",
+      "priority": "Medium",
       "effort": "Medium",
-      "impact": "0.05-0.10",
-      "implementation": "Use JavaScript to apply the correct aspect ratio (using CSS property) and ensure appropriate widths and heights are defined dynamically.",
+      "impact": "Potential improvement in user input responsiveness.",
+      "implementation": "Load 'auth0-spa-js' in a delayed phase, ensuring no critical functionality is hindered.",
       "codeExample": "",
-      "category": "images"
+      "category": "third-party"
     }
   ],
-  "extractedAt": "2025-07-10T23:53:15.116Z"
+  "extractedAt": "2025-07-11T00:28:56.531Z"
 }

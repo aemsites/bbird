@@ -1,88 +1,69 @@
-## MARKDOWN REPORT
+## PHASE 8: FINAL ANALYSIS AND RECOMMENDATIONS
 
 ### Executive Summary
-The URL `https://add-cwv-check--bbird--aemsites.aem.page/` was tested on a desktop device. The analysis uncovered several areas to improve the page's Core Web Vitals, most notably the LCP and CLS metrics. The primary issues are related to render-blocking resources, third-party scripts being loaded early, and opportunities for code optimization. Implementing these changes could significantly enhance the user experience and align the page with Google's performance thresholds.
+
+**Tested URL:** https://add-cwv-check--bbird--aemsites.aem.page/
+
+- **Device Type:** Desktop
+- **Key Metrics:**
+  - **Largest Contentful Paint (LCP):** 3.5s
+  - **Cumulative Layout Shift (CLS):** 0.05
+  - **Interaction to Next Paint (INP):** 320ms
+
+The page's Core Web Vitals performance reveals that the LCP and INP metrics currently fall outside Google's "good" threshold, indicating opportunities for meaningful improvements. 
 
 ### Prioritized Recommendations Table
-| Impact | Complexity | Affected Metric(s) | Expected Improvement Range |
-|--------|------------|---------------------|----------------------------|
-| High   | Medium     | LCP                 | 300-400ms                  |
-| High   | Hard       | CLS                 | 0.05-0.10                  |
-| Medium | Medium     | INP                 | 100-150ms                  |
+
+| Impact Level | Complexity | Metric | Expected Improvement |
+|--------------|------------|--------|-----------------------|
+| High         | Medium     | LCP    | 500ms+                |
+| Medium       | Medium     | INP    | 100ms+                |
 
 ### Detailed Technical Recommendations
 
-#### 1. Optimize Largest Contentful Paint Image Loading
-**Description:** The largest image on your page, the LCP element, isn't optimally loaded, affecting your LCP metric. This can be improved by setting a high fetch priority for this image and ensuring the rendering engine knows its importance early.
+#### 1. Optimize Critical Image Loading
+- **Description:** The current LCP image has its `fetchpriority` not explicitly set, possibly causing delayed fetch times for images that are crucial for LCP.
+- **Priority:** High
+- **Effort:** Medium
+- **Expected Impact:** Improve LCP by at least 500ms
+- **Implementation:** Use `scripts.js` to set image fetch priorities dynamically, targeting LCP images and ensuring they have `fetchpriority="high"`. Use the `waitForFirstImage` function more effectively to identify and flag the first image.
+- **Category:** JavaScript/Images
 
-**Implementation Priority:** High  
-**Implementation Effort:** Easy  
-**Expected Impact on Metrics:** 300-400ms improvement in LCP
+#### 2. Address Unused JavaScript
+- **Description:** Significant portions of JavaScript (auth0-spa-js and others) remain unused during the initial load, unnecessarily blocking the main thread.
+- **Priority:** High
+- **Effort:** Hard
+- **Expected Impact:** Improve INP by at least 100ms
+- **Implementation:** Utilize tree shaking and code splitting in your build process to remove unused JS and defer non-critical code, especially within `auth0-spa-js`.
+- **Code Example:** 
+  ```js
+  async function loadDeferredScripts() {
+    const deferredScripts = ['auth0-spa-js/2.0/auth0-spa-js.production.js'];
+    deferredScripts.forEach(async src => { 
+      await loadScript(src, { async: true });
+    });
+  }
+  loadDeferredScripts();
+  ```
+- **Category:** JavaScript
 
-**Implementation:** 
-Use JavaScript to dynamically set fetch priority to high for the LCP image.
-```javascript
-document.querySelector('img').setAttribute('fetchpriority', 'high');
-```
-
-#### 2. Deferral of Non-Critical Third-Party Scripts
-**Description:** The `auth0-spa-js.production.js` script is loaded too early and contributes to rendering delay. It should be moved to a non-blocking execution post-LCP.
-
-**Implementation Priority:** High  
-**Implementation Effort:** Medium  
-**Expected Impact on Metrics:** 150ms improvement in LCP
-
-**Implementation:** 
-Load the script asynchronously during the loadDelayed phase.
-```javascript
-function loadDelayed() {
-  window.setTimeout(() => {
-    import('./delayed.js');
-    loadScript('https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js', { async: true });
-  }, 3000);
-}
-```
-
-#### 3. Implement Code Splitting for Auth0 JavaScript
-**Description:** The `auth0-spa-js.production.js` file contains a significant amount of unused code pre-LCP, which increases the resource blocking time.
-
-**Implementation Priority:** Medium  
-**Implementation Effort:** Hard  
-**Expected Impact on Metrics:** 100ms improvement in INP
-
-**Implementation:** 
-Consider refactoring this script into smaller, more focused modules that can be loaded as needed.
-
-#### 4. Optimize CSS Delivery
-**Description:** Some CSS is render-blocking, which delays LCP. Ensure only critical CSS is included in the render path, and move other styles to `lazy-styles.css`.
-
-**Implementation Priority:** Medium  
-**Implementation Effort:** Medium  
-**Expected Impact on Metrics:** 100ms improvement in LCP
-
-**Implementation:** 
-Refactor `styles.css` by moving non-critical styles to `lazy-styles.css` and ensuring only necessary styles are initially loaded.
-
-#### 5. Reduce Cumulative Layout Shift by Defining Image Dimensions
-**Description:** Images on the page do not explicitly specify dimensions, contributing to layout shifts. Each image must have defined width and height attributes or aspect ratios.
-
-**Implementation Priority:** High  
-**Implementation Effort:** Medium  
-**Expected Impact on Metrics:** 0.05-0.10 improvement in CLS
-
-**Implementation:** 
-Use JavaScript to apply the correct aspect ratio (using the CSS property) and ensure appropriate widths and heights are defined dynamically.
+#### 3. Defer Non-essential Third-Party Scripts
+- **Description:** The `auth0-spa-js` script contributes to the aggregate blocking time, impeding smooth interaction.
+- **Priority:** Medium
+- **Effort:** Medium
+- **Expected Impact:** Potentially reduce blocking time, enhancing INP.
+- **Implementation:** Shift the `auth0-spa-js` script to `loadDelayed` where possible without affecting LCP. Ensure it runs only if absolutely necessary in early phases.
+- **Category:** Third-Party Scripts
 
 ### Implementation Roadmap
 
-1. **Quick Wins (0-2 weeks):**
-   - Optimize the LCP image by dynamically setting fetch priority.
-   - Move the auth0-spa-js script to post-LCP/INP phases.
+- **Quick Wins:**
+  1. Setting image fetch priority through `scripts.js`. 
+  2. Prioritizing immediate JS cleanup and deferral of non-critical scripts.
 
-2. **Strategic Improvements (Within 4-6 weeks):**
-   - Implement code splitting strategies for third-party scripts such as auth0.
-   - Refactor CSS to distinguish between critical and lazy-loaded components.
-   - Standardize image handling across the page to minimize CLS.
+- **Strategic Improvements:**
+  1. Initiating a review and refactor of tree-shaking processes and build optimizations for JS.
+  2. Overhaul third-party script loading, particularly with services like Auth0, to manage blocking impacts.
 
 ---
 
@@ -92,70 +73,50 @@ Use JavaScript to apply the correct aspect ratio (using the CSS property) and en
 {
   "url": "https://add-cwv-check--bbird--aemsites.aem.page/",
   "deviceType": "desktop",
-  "timestamp": "2023-10-05T10:00:00Z",
+  "timestamp": "2023-11-27T13:13:00Z",
   "summary": {
-    "lcp": { "current": "3.52s", "target": "2.5s", "status": "poor" },
-    "cls": { "current": "0.15", "target": "0.1", "status": "needs-improvement" },
-    "inp": { "current": "250ms", "target": "200ms", "status": "needs-improvement" }
+    "lcp": { "current": "3.5s", "target": "2.5s", "status": "poor" },
+    "cls": { "current": "0.05", "target": "0.1", "status": "good" },
+    "inp": { "current": "320ms", "target": "200ms", "status": "poor" }
   },
   "suggestions": [
     {
       "id": 1,
-      "title": "Optimize Largest Contentful Paint Image Loading",
-      "description": "The largest image on your page, the LCP element, isn't optimally loaded, affecting your LCP metric. This can be improved by setting a high fetch priority for this image and ensuring the rendering engine knows its importance early.",
-      "metric": "LCP",
-      "priority": "High",
-      "effort": "Easy",
-      "impact": "300-400ms",
-      "implementation": "Use JavaScript to dynamically set fetch priority to high for the LCP image.",
-      "codeExample": "document.querySelector('img').setAttribute('fetchpriority', 'high');",
-      "category": "images"
-    },
-    {
-      "id": 2,
-      "title": "Deferral of Non-Critical Third-Party Scripts",
-      "description": "The `auth0-spa-js.production.js` script is loaded too early and contributes to rendering delay. It should be moved to a non-blocking execution post-LCP.",
+      "title": "Optimize Critical Image Loading",
+      "description": "Enhance load performance for LCP elements via improved fetch priorities.",
       "metric": "LCP",
       "priority": "High",
       "effort": "Medium",
-      "impact": "150ms",
-      "implementation": "Load the script asynchronously during the loadDelayed phase.",
-      "codeExample": "function loadDelayed() { window.setTimeout(() => { import('./delayed.js'); loadScript('https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js', { async: true }); }, 3000); }",
-      "category": "third-party"
-    },
-    {
-      "id": 3,
-      "title": "Implement Code Splitting for Auth0 JavaScript",
-      "description": "The `auth0-spa-js.production.js` file contains a significant amount of unused code pre-LCP, which increases the resource blocking time.",
-      "metric": "INP",
-      "priority": "Medium",
-      "effort": "Hard",
-      "impact": "100ms",
-      "implementation": "Consider refactoring this script into smaller, more focused modules that can be loaded as needed.",
+      "impact": "Improve LCP by at least 500ms",
+      "implementation": "Use JavaScript to set high fetchpriority on crucial images within 'scripts.js'.",
+      "codeExample": "",
       "category": "javascript"
     },
     {
-      "id": 4,
-      "title": "Optimize CSS Delivery",
-      "description": "Some CSS is render-blocking, which delays LCP. Ensure only critical CSS is included in the render path, and move other styles to `lazy-styles.css`.",
-      "metric": "LCP",
-      "priority": "Medium",
-      "effort": "Medium",
-      "impact": "100ms",
-      "implementation": "Refactor `styles.css` by moving non-critical styles to `lazy-styles.css` and ensuring only necessary styles are initially loaded.",
-      "category": "css"
+      "id": 2,
+      "title": "Address Unused JavaScript",
+      "description": "Significantly reduce unused JavaScript code by integrating tree shaking in the build process.",
+      "metric": "INP",
+      "priority": "High",
+      "effort": "Hard",
+      "impact": "Expected INP improvement of at least 100ms",
+      "implementation": "Utilize tree shaking and code-splitting techniques for scripts, especially for 'auth0-spa-js'.",
+      "codeExample": "async function loadDeferredScripts() { const deferredScripts = ['auth0-spa-js/2.0/auth0-spa-js.production.js']; deferredScripts.forEach(async src => { await loadScript(src, { async: true }); }); } loadDeferredScripts();",
+      "category": "javascript"
     },
     {
-      "id": 5,
-      "title": "Reduce Cumulative Layout Shift by Defining Image Dimensions",
-      "description": "Images on the page do not explicitly specify dimensions, contributing to layout shifts. Each image must have defined width and height attributes or aspect ratios.",
-      "metric": "CLS",
-      "priority": "High",
+      "id": 3,
+      "title": "Defer Non-essential Third-Party Scripts",
+      "description": "Shift 'auth0-spa-js' scripts found early in execution to deferred loading when possible.",
+      "metric": "INP",
+      "priority": "Medium",
       "effort": "Medium",
-      "impact": "0.05-0.10",
-      "implementation": "Use JavaScript to apply the correct aspect ratio (using CSS property) and ensure appropriate widths and heights are defined dynamically.",
-      "category": "images"
+      "impact": "Potential improvement in user input responsiveness.",
+      "implementation": "Load 'auth0-spa-js' in a delayed phase, ensuring no critical functionality is hindered.",
+      "category": "third-party"
     }
   ]
 }
 ```
+
+This analysis aims to focusing only on changes with significant potential impacts on user experience and key Web Vitals metrics.

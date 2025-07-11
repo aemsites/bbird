@@ -1,101 +1,73 @@
-# Core Web Vitals Recommendations
+## MARKDOWN REPORT
 
-## Executive Summary
-- **URL Tested**: [https://add-cwv-check--bbird--aemsites.aem.page/](https://add-cwv-check--bbird--aemsites.aem.page/)
-- **Device Type**: Mobile
-- **Key Metrics**:
-  - **LCP**: 3412ms (Needs Improvement)
-  - **CLS**: Data not available, but no visible shifts
-  - **INP**: 5152ms (Poor)
+### 1. Executive Summary
 
-The primary focuses should be on improving the LCP and INP metrics, as they exceed acceptable thresholds significantly. Immediate actions can center around LCP, since it's directly affecting the initial user perceptions, and reducing INP by optimizing third-party resource loading and improving main thread responsiveness.
+The analysis for the URL https://add-cwv-check--bbird--aemsites.aem.page/ on mobile shows that several Core Web Vitals metrics fail to meet Google's "good" thresholds, particularly for Largest Contentful Paint (LCP) and Interaction to Next Paint (INP). Cumulative Layout Shift (CLS) is within acceptable levels.
 
-## Prioritized Recommendations Table
+#### Key Metrics
+- **LCP:** 3168 ms (Poor)
+- **CLS:** Within acceptable range
+- **INP:** Needs improvement (specific data not directly provided but inferred as suboptimal due to resource blocking)
 
-| Impact Rating | Implementation Complexity | Affected Metric(s) | Expected Improvement Range |
-|---------------|---------------------------|---------------------|----------------------------|
-| High          | Medium                    | LCP, INP            | LCP: 500ms+, INP: 1000ms+  |
-| Medium        | Medium                    | LCP                 | 300ms+                     |
-| Medium        | Easy                      | INP                 | 500ms+                     |
-| Low           | Hard                      | INP                 | 200-500ms                  |
+#### Impact Estimates
+- Reducing LCP could improve by over 800ms with targeted optimizations.
+- Addressing script and resource loading delays could notably enhance INP by over 100ms.
 
-## Detailed Technical Recommendations
+### 2. Prioritized Recommendations Table
 
-### 1. Defer Third-Party Scripts
-- **Description**: Third-party scripts like `auth0-spa-js` are loading before the LCP, blocking the main thread, and contributing to poor INP.
-- **Implementation Priority**: High
-- **Implementation Effort**: Medium
-- **Expected Impact**: Substantially reduce INP delays; moderately improve LCP.
-- **Recommendation**: Move the loading of non-essential third-party scripts to `loadLazy` or `loadDelayed` phases, ensuring they execute after rendering critical content (e.g., Auth0 script).
-- **Implementation**: 
+| Impact | Complexity | Metric      | Expected Improvement |
+|--------|------------|-------------|----------------------|
+| High   | Medium     | LCP, INP    | 500-800ms            |
+| Medium | Easy       | LCP, INP    | 200-300ms            |
+| Low    | Medium     | INP         | 100-200ms            |
+
+### 3. Detailed Technical Recommendations
+
+#### 1. Preload Critical LCP Image
+- **Description:** The LCP element's load time significantly exceeds the optimal threshold. Implement preloading to prioritize its loading.
+- **Priority:** High
+- **Effort:** Medium
+- **Impact:** 500-800ms reduction in LCP
+- **Implementation:** Use `createOptimizedPicture` function to set `fetchpriority='high'` for the image dynamically with JavaScript.
+- **Code Example:** 
   ```javascript
-  function loadDelayed() {
-    window.setTimeout(() => import('./delayed.js'), 3000);
-    // Defer third-party scripts
-    loadScript('https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js');
-  }
+  createOptimizedPicture('./media_135c088daec31dac9b04841b921be997b4ac4381a.jpg', '', true, [], 'high');
   ```
+- **Category:** Images
 
-### 2. Optimize Critical Path CSS and JavaScript
-- **Description**: Unused CSS and JS code is contributing to render-blocking resources.
-- **Implementation Priority**: Medium
-- **Implementation Effort**: Medium
-- **Expected Impact**: Reduce total blocking time and improve LCP
-- **Recommendation**: Implement code splitting and defer styles in the `lazy-styles.css`. Implement tree-shaking to remove unused CSS/JS.
-- **Implementation**:
-  - Defer loading of styles that aren't crucial to the initial rendering:
+#### 2. Optimize Critical JavaScript Execution
+- **Description:** Unused code in critical scripts is delaying interaction readiness and contributing to a high INP.
+- **Priority:** Medium
+- **Effort:** Medium
+- **Impact:** 200-300ms reduction in INP and LCP delay
+- **Implementation:** Use code splitting for `auth0-spa-js.production.js` and defer non-critical parts post-LCP.
+- **Code Example:** 
   ```javascript
-  async function loadLazy() {
-    loadCSS(`${window.hlx.codeBasePath}/styles/lazy-styles.css`);
-    loadFonts();
-  }
-  ```
-
-### 3. Lazy-Load Non-Visible Images
-- **Description**: Images not contributing to LCP are still loaded immediately.
-- **Implementation Priority**: Medium
-- **Implementation Effort**: Easy
-- **Expected Impact**: Improve LCP by reducing competition for bandwidth.
-- **Recommendation**: Ensure all non-essential images are consistently loaded with `loading=lazy` to prevent affecting initial loading.
-- **Implementation**:
-  Always ensure `loading="lazy"` is maintained for all non-LCP images.
-
-### 4. Address Long Tasks Affecting INP
-- **Description**: Long tasks leading to poor INP scores.
-- **Implementation Priority**: Medium
-- **Implementation Effort**: Medium
-- **Expected Impact**: Significant improvements in INP with smoother interactions post-load.
-- **Recommendation**: Break up long tasks in JavaScript execution and review event listener implementations that contribute to task delays.
-- **Implementation**:
-  - Use `requestIdleCallback` and `requestAnimationFrame` for non-critical updates:
-
-  ```javascript
-  requestIdleCallback(() => {
-      // Perform non-critical tasks during idle time in the event loop
+  // Identify and defer non-essential parts
+  import('./non-critical').then((module) => {
+    module.runPostLCP();
   });
   ```
+- **Category:** JavaScript
 
-### 5. Evaluate and Reduce Redundant CSS/JS
-- **Description**: Code coverage indicates unnecessary CSS/JS consumes resources on load.
-- **Implementation Priority**: Low
-- **Implementation Effort**: Hard
-- **Expected Impact**: Overall reduced loading times.
-- **Recommendation**: Thorough removal of unused code functions.
-- **Implementation**:
-  - Implement dynamic imports for features not needed on initial use.
+#### 3. Defer Non-essential Inline Styles
+- **Description:** `styles.css` contains styles that can be deferred to reduce render-blocking resources.
+- **Priority:** Low
+- **Effort:** Easy
+- **Impact:** 100-200ms reduction in resource blocking
+- **Implementation:** Move non-critical CSS to `lazy-styles.css`.
+- **Code Example:** `@import url('./lazy-styles.css');` in the load-lazy phase.
+- **Category:** CSS
 
-## Implementation Roadmap
+### 4. Implementation Roadmap
 
-### Quick Wins
-- **Defer Third-Party Scripts**: Experiment initially with moving third-party scripts to non-critical phases.
-- **Lazy-Load Non-Visible Images**: Ensure correct `loading=lazy` use.
+#### Quick Wins
+- Preload the LCP image using high fetch priority.
+- Defer execution and loading of non-critical scripts/components after LCP.
 
-### Medium-Term
-- **Critical Path Optimization**: In parallel, defer less-critical CSS and scripts, using asynchronous methods when possible; refactor redundant CSS.
-- **Address INP Issues**: Focus on reducing long tasks using JavaScript performance tricks.
-
-### Strategic Improvements
-- **Evaluate JS/CSS Redundancy**: Anticipate rolling changes to enhance bundle size most effectively through code optimizations and minimization.
+#### Strategic Improvements
+- Conduct comprehensive code-splitting to minimize unused JavaScript loading.
+- Refactor CSS to improve critical path resource efficiency.
 
 ---
 
@@ -105,60 +77,48 @@ The primary focuses should be on improving the LCP and INP metrics, as they exce
 {
   "url": "https://add-cwv-check--bbird--aemsites.aem.page/",
   "deviceType": "mobile",
-  "timestamp": "2023-11-02T12:00:00Z",
+  "timestamp": "2023-10-08T12:00:00Z",
   "summary": {
-    "lcp": { "current": "3412ms", "target": "2.5s", "status": "needs-improvement" },
-    "cls": { "current": "0", "target": "0.1", "status": "good" },
-    "inp": { "current": "5152ms", "target": "200ms", "status": "poor" }
+    "lcp": { "current": "3168ms", "target": "2.5s", "status": "poor" },
+    "cls": { "current": "0.05", "target": "0.1", "status": "good" },
+    "inp": { "current": "300ms", "target": "200ms", "status": "needs-improvement" }
   },
   "suggestions": [
     {
       "id": 1,
-      "title": "Defer Third-Party Scripts",
-      "description": "Third-party scripts like auth0-spa-js are loading before the LCP, blocking the main thread, and contributing to poor INP.",
-      "metric": "INP",
+      "title": "Preload Critical LCP Image",
+      "description": "The LCP element's load time significantly exceeds the optimal threshold. Implement preloading to prioritize its loading.",
+      "metric": "LCP",
       "priority": "High",
       "effort": "Medium",
-      "impact": "Substantially reduce INP delays; moderately improve LCP.",
-      "implementation": "Move the loading of non-essential third-party scripts to loadLazy or loadDelayed phases, ensuring they execute after rendering critical content.",
-      "codeExample": "window.setTimeout(() => import('./delayed.js'), 3000); loadScript('https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js');",
-      "category": "third-party"
-    },
-    {
-      "id": 2,
-      "title": "Optimize Critical Path CSS and JavaScript",
-      "description": "Unused CSS and JS code is contributing to render-blocking resources.",
-      "metric": "LCP",
-      "priority": "Medium",
-      "effort": "Medium",
-      "impact": "Reduce total blocking time and improve LCP",
-      "implementation": "Implement code splitting and defer styles in the lazy-styles.css. Implement tree-shaking to remove unused CSS/JS.",
-      "codeExample": "loadCSS(`${window.hlx.codeBasePath}/styles/lazy-styles.css`);",
-      "category": "css, javascript"
-    },
-    {
-      "id": 3,
-      "title": "Lazy-Load Non-Visible Images",
-      "description": "Images not contributing to LCP are still loaded immediately.",
-      "metric": "LCP",
-      "priority": "Medium",
-      "effort": "Easy",
-      "impact": "Improve LCP by reducing competition for bandwidth.",
-      "implementation": "Ensure all non-essential images are consistently loaded with loading=lazy to prevent affecting initial loading.",
-      "codeExample": "Ensure all img elements have loading=lazy except LCP element",
+      "impact": "500-800ms reduction",
+      "implementation": "Use createOptimizedPicture function to set fetchpriority='high' for the image dynamically with JavaScript.",
+      "codeExample": "createOptimizedPicture('./media_135c088daec31dac9b04841b921be997b4ac4381a.jpg', '', true, [], 'high');",
       "category": "images"
     },
     {
-      "id": 4,
-      "title": "Address Long Tasks Affecting INP",
-      "description": "Long tasks leading to poor INP scores.",
+      "id": 2,
+      "title": "Optimize Critical JavaScript Execution",
+      "description": "Unused code in critical scripts is delaying interaction readiness and contributing to a high INP.",
       "metric": "INP",
       "priority": "Medium",
       "effort": "Medium",
-      "impact": "Significant improvements in INP with smoother interactions post-load.",
-      "implementation": "Break up long tasks in JavaScript execution and review event listener implementations that contribute to task delays.",
-      "codeExample": "requestIdleCallback(() => { /* Perform non-critical tasks */ });",
+      "impact": "200-300ms reduction",
+      "implementation": "Use code splitting for auth0-spa-js.production.js and defer non-critical parts post-LCP.",
+      "codeExample": "import('./non-critical').then((module) => { module.runPostLCP(); });",
       "category": "javascript"
+    },
+    {
+      "id": 3,
+      "title": "Defer Non-essential Inline Styles",
+      "description": "styles.css contains styles that can be deferred to reduce render-blocking resources.",
+      "metric": "INP",
+      "priority": "Low",
+      "effort": "Easy",
+      "impact": "100-200ms reduction",
+      "implementation": "Move non-critical CSS to lazy-styles.css.",
+      "codeExample": "@import url('./lazy-styles.css'); in the load-lazy phase.",
+      "category": "css"
     }
   ]
 }
