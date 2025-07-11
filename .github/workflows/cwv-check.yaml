@@ -116,6 +116,7 @@ jobs:
           name: desktop-report
           path: cwv-output/*.desktop.report.gpt4o.summary.md
           if-no-files-found: error
+          retention-days: 1
 
       - name: Upload Mobile Report
         uses: actions/upload-artifact@v4
@@ -123,6 +124,7 @@ jobs:
           name: mobile-report
           path: cwv-output/*.mobile.report.gpt4o.summary.md
           if-no-files-found: error
+          retention-days: 1
 
       - name: Upload Suggestions JSON
         uses: actions/upload-artifact@v4
@@ -130,6 +132,7 @@ jobs:
           name: suggestions-json
           path: cwv-output/*.suggestions.gpt4o.json
           if-no-files-found: error
+          retention-days: 1
 
       - name: Print project file tree (excluding node_modules)
         run: |
