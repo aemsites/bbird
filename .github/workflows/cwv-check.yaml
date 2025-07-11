@@ -1,0 +1,209 @@
+name: CWV PR Check
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  run-cwv-check:
+    runs-on: ubuntu-latest
+    environment: cwv-check-env-junaid
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install CWV Agent
+        run: npm install --no-save git+https://github.com/ramboz/cwv-agent.git
+
+      - name: Print dummy secret for testing
+        env:
+          DUMMY: ${{ secrets.DUMMY_TEST_KEY }}
+        run: |
+          echo "Dummy key from secret: $DUMMY"
+
+      - name: Print dummy secret for testing
+        run: |
+          echo "Dummy key from secret: ${{ secrets.DUMMY_TEST_KEY }}"
+
+
+      - name: Build Preview URL
+        id: build_url
+        run: |
+          BRANCH=${{ github.head_ref }}
+          REPO=${{ github.event.repository.name }}
+          OWNER=${{ github.repository_owner }}
+          PREVIEW_URL="https://${BRANCH}--${REPO}--${OWNER}.aem.page"
+          echo "PREVIEW_URL=$PREVIEW_URL" >> $GITHUB_OUTPUT
+
+      - name: Run CWV Agent (Mobile & Desktop)
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+          AZURE_OPENAI_API_DEPLOYMENT_NAME: ${{ secrets.AZURE_OPENAI_API_DEPLOYMENT_NAME }}
+          AZURE_OPENAI_API_INSTANCE_NAME: ${{ secrets.AZURE_OPENAI_API_INSTANCE_NAME }}
+          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          AZURE_OPENAI_API_VERSION: ${{ secrets.AZURE_OPENAI_API_VERSION }}
+          GOOGLE_PAGESPEED_INSIGHTS_API_KEY: ${{ secrets.GOOGLE_PAGESPEED_INSIGHTS_API_KEY }}
+          GOOGLE_CRUX_API_KEY: ${{ secrets.GOOGLE_CRUX_API_KEY }}
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "true"
+          PUPPETEER_EXECUTABLE_PATH: "/usr/bin/google-chrome"
+        run: |
+          echo "⚡ Using URL: ${{ steps.build_url.outputs.preview_url }}"
+          node node_modules/cwv-agent/index.js --action prompt --url ${{ steps.build_url.outputs.preview_url }} --device mobile --model gpt-4o
+          node node_modules/cwv-agent/index.js --action prompt --url ${{ steps.build_url.outputs.preview_url }} --device desktop --model gpt-4o
+          # Copy results to a top-level folder for uploading
+          mkdir -p cwv-output
+          cp node_modules/cwv-agent/.cache/*.report.gpt4o.summary.md cwv-output/
+          cp node_modules/cwv-agent/.cache/*.suggestions.gpt4o.json cwv-output/
+
+      - name: Upload Desktop Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-report
+          path: cwv-output/*.desktop.report.gpt4o.summary.md
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Mobile Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-report
+          path: cwv-output/*.mobile.report.gpt4o.summary.md
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Suggestions JSON
+        uses: actions/upload-artifact@v4
+        with:
+          name: suggestions-json
+          path: cwv-output/*.suggestions.gpt4o.json
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Print project file tree (excluding node_modules)
+        run: |
+          sudo apt-get update && sudo apt-get install -y tree
+          echo "📁 Project structure (excluding node_modules):"
+          tree -L 3 -a -I 'node_modules'
+
+
+# name: CWV PR Check
+
+# on:
+#   pull_request:
+#     types: [opened, synchronize]
+
+# jobs:
+#   run-cwv-check:
+#     runs-on: ubuntu-latest
+#     environment: cwv-check-env-junaid
+
+#     steps:
+#       - name: Checkout repo
+#         uses: actions/checkout@v3
+
+#       - name: Set up Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: '18'
+
+#       - name: Install CWV Agent
+#         run: npm install --no-save git+https://github.com/ramboz/cwv-agent.git
+
+#       - name: Print dummy secret for testing
+#         env:
+#           DUMMY: ${{ secrets.DUMMY_TEST_KEY }}
+#         run: |
+#           echo "Dummy key from secret: $DUMMY"
+
+#       - name: Build Preview URL
+#         id: build_url
+#         run: |
+#           BRANCH=${{ github.head_ref }}
+#           REPO=${{ github.event.repository.name }}
+#           OWNER=${{ github.repository_owner }}
+#           PREVIEW_URL="https://${BRANCH}--${REPO}--${OWNER}.aem.page"
+#           echo "PREVIEW_URL=$PREVIEW_URL" >> $GITHUB_OUTPUT
+
+#       - name: Run CWV Agent (Mobile & Desktop)
+#         env:
+#           GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+#           AZURE_OPENAI_API_DEPLOYMENT_NAME: ${{ secrets.AZURE_OPENAI_API_DEPLOYMENT_NAME }}
+#           AZURE_OPENAI_API_INSTANCE_NAME: ${{ secrets.AZURE_OPENAI_API_INSTANCE_NAME }}
+#           AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+#           AZURE_OPENAI_API_VERSION: ${{ secrets.AZURE_OPENAI_API_VERSION }}
+#           GOOGLE_PAGESPEED_INSIGHTS_API_KEY: ${{ secrets.GOOGLE_PAGESPEED_INSIGHTS_API_KEY }}
+#           GOOGLE_CRUX_API_KEY: ${{ secrets.GOOGLE_CRUX_API_KEY }}
+#         run: |
+#           echo "⚡ Using URL: ${{ steps.build_url.outputs.preview_url }}"
+#           node node_modules/cwv-agent/index.js --action prompt --url ${{ steps.build_url.outputs.preview_url }} --device mobile --model gpt-4o
+#           node node_modules/cwv-agent/index.js --action prompt --url ${{ steps.build_url.outputs.preview_url }} --device desktop --model gpt-4o
+
+#       - name: Upload All CWV Summary Reports
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: cwv-summaries
+#           path: .cache/*.report.gpt4o.summary.md
+
+#       - name: Print project file tree (excluding node_modules)
+#         run: |
+#           sudo apt-get update && sudo apt-get install -y tree
+#           echo "📁 Project structure (excluding node_modules):"
+#           tree -L 3 -a -I 'node_modules'
+
+# - name: Upload All CWV Summary Reports
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: cwv-summaries
+      #     path: cwv-output/*
+      #     if-no-files-found: error
+
+
+############
+      # - name: Publish CWV Reports to GitHub Pages
+      #   if: github.event_name == 'pull_request'
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   run: |
+      #     git config --global user.name "github-actions[bot]"
+      #     git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      #     # Authenticated clone using GITHUB_TOKEN
+      #     REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}"
+
+      #     git clone --depth 1 --branch gh-pages "$REPO_URL" gh-pages
+
+      #     # Clean old files for this PR branch
+      #     rm -f gh-pages/${{ github.head_ref }}.*
+
+      #     # Copy CWV output reports to gh-pages root
+      #     cp cwv-output/*.report.gpt4o.summary.md gh-pages/
+      #     cp cwv-output/*.suggestions.gpt4o.json gh-pages/
+
+      #     # Commit and push
+      #     cd gh-pages
+      #     git add .
+      #     git commit -m "Add CWV reports for PR #${{ github.event.pull_request.number }}" || echo "No changes to commit"
+      #     git push "$REPO_URL" gh-pages
+
+
+      # - name: Print public CWV URLs
+      #   run: |
+      #     REPO="${{ github.event.repository.name }}"
+      #     OWNER="${{ github.repository_owner }}"
+      #     BRANCH="${{ github.head_ref }}"
+      #     BASE_URL="https://${OWNER}.github.io/${REPO}"
+      #     echo " Public CWV Report Links for Branch: $BRANCH"
+      #     echo " Desktop Report: $BASE_URL/${BRANCH}--${REPO}--${OWNER}-aem-page.desktop.report.gpt4o.summary.md"
+      #     echo " Mobile Report:  $BASE_URL/${BRANCH}--${REPO}--${OWNER}-aem-page.mobile.report.gpt4o.summary.md"
+      #     echo " Suggestions:    $BASE_URL/${BRANCH}--${REPO}--${OWNER}-aem-page.desktop.suggestions.gpt4o.json"
+      #     echo " Suggestions:    $BASE_URL/${BRANCH}--${REPO}--${OWNER}-aem-page.mobile.suggestions.gpt4o.json"
