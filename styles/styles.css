@@ -255,3 +255,79 @@ main .section.highlight {
   margin: 0;
   padding: 40px 0;
 }
+
+.block.protected {
+  background: #f0f0f0;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  margin: 20px 0;
+  color: #333;
+}
+
+.block.protected button {
+  margin-left: 10px;
+  background: #007cba;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.block.protected button:hover {
+  background: #005a8b;
+}
+
+/* Page-level protection modal */
+#page-protection-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
+}
+
+.modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgb(0 0 0 / 80%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background: white;
+  padding: 40px;
+  border-radius: 8px;
+  text-align: center;
+  color: #333;
+  max-width: 400px;
+  margin: 20px;
+}
+
+.modal-content h2 {
+  margin-top: 0;
+  color: #333;
+}
+
+.modal-content button.modal-button {
+  margin-top: 20px;
+  background: #007cba;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.modal-content button.modal-button:hover {
+  background: #005a8b;
+}

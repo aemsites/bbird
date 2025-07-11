@@ -145,6 +145,22 @@ function setup() {
       console.log(error);
     }
   }
+
+  // Initialize profile for protected content functionality
+  if (!window.profile) {
+    // Check if auth state is stored in sessionStorage
+    const savedAuthState = sessionStorage.getItem('isSignedIn');
+    window.profile = {
+      isSignedIn: savedAuthState === 'true', // Restore from session
+    };
+  }
+
+  // Simple testing toggle
+  window.toggleAuth = () => {
+    window.profile.isSignedIn = !window.profile.isSignedIn;
+    sessionStorage.setItem('isSignedIn', window.profile.isSignedIn.toString());
+    window.location.reload();
+  };
 }
 
 /**
@@ -612,6 +628,19 @@ function decorateBlock(block) {
     block.dataset.blockName = shortBlockName;
     block.dataset.blockStatus = 'initialized';
     wrapTextNodes(block);
+
+    // Simple protected content check
+    if (block.classList.contains('protected')) {
+      if (!window.profile?.isSignedIn) {
+        // User not signed in - show protection message
+        block.innerHTML = '<p>🔒 This content is protected. <button onclick="window.toggleAuth()">Sign in to view</button></p>';
+        block.dataset.blockStatus = 'loaded'; // Prevent block JS from loading
+        return;
+      }
+      // User is signed in - remove protected class to normalize the block
+      block.classList.remove('protected');
+    }
+
     const blockWrapper = block.parentElement;
     blockWrapper.classList.add(`${shortBlockName}-wrapper`);
     const section = block.closest('.section');

@@ -13,6 +13,7 @@ import {
   loadCSS,
   loadBlock,
   decorateBlock,
+  getMetadata,
 } from './aem.js';
 
 import createElement from './utils.js';
@@ -164,6 +165,37 @@ function loadDelayed() {
 }
 
 async function loadPage() {
+  // Process metadata first so we can check it
+  document.documentElement.lang = 'en';
+  decorateTemplateAndTheme();
+
+  // Make body visible
+  document.body.classList.add('appear');
+
+  // Check page-level protection after metadata is processed
+  if (getMetadata('gated') === 'true' && !window.profile?.isSignedIn) {
+    const main = document.querySelector('main');
+    if (main) {
+      main.innerHTML = ''; // Clear all content
+    }
+
+    // Show protection modal immediately
+    const modal = document.createElement('div');
+    modal.id = 'page-protection-modal';
+    modal.innerHTML = `
+      <div class="modal-overlay">
+        <div class="modal-content">
+          <h2>🔒 This content is protected</h2>
+          <p>Please sign in to access this page.</p>
+          <button class="modal-button" onclick="window.toggleAuth()">Sign in to view</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    document.body.classList.add('page-protected');
+    return;
+  }
+
   await loadEager(document);
   await loadLazy(document);
   loadDelayed();
