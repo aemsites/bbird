@@ -60,7 +60,7 @@ jobs:
         run: |
           mkdir -p cwv-output
           echo "Running CWV audits for listed AEM URLs..."
-          echo '${{ steps.extract_urls.outputs.urls }}' | jq -r '.[]' | while read URL; do
+          echo "${{ steps.extract_urls.outputs.urls }}" | jq -r '.[]' | while read URL; do
             echo "Auditing $URL"
             echo "::debug::Targeting URL = $URL"
             node node_modules/cwv-agent/index.js --action prompt --url "$URL" --device mobile --model gpt-4o
@@ -80,7 +80,7 @@ jobs:
           for DIR in cwv-output/*; do
             if [ -d "$DIR" ]; then
               NAME=$(basename "$DIR")
-              echo "📦 Uploading artifacts for $NAME"
+              echo " Uploading artifacts for $NAME"
               zip -r "$NAME.zip" "$DIR"
               gh release upload "temp-cwv-release" "$NAME.zip" || echo "Skipped GH release"
               gh api -X POST \
