@@ -62,6 +62,7 @@ jobs:
           echo "Running CWV audits for listed AEM URLs..."
           echo '${{ steps.extract_urls.outputs.urls }}' | jq -r '.[]' | while read URL; do
             echo "Auditing $URL"
+            echo "::debug::Targeting URL = $URL"
             node node_modules/cwv-agent/index.js --action prompt --url "$URL" --device mobile --model gpt-4o
             node node_modules/cwv-agent/index.js --action prompt --url "$URL" --device desktop --model gpt-4o
             
