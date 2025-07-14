@@ -61,11 +61,11 @@ jobs:
           mkdir -p cwv-output
           echo "Running CWV audits for listed AEM URLs..."
           echo "${{ steps.extract_urls.outputs.urls }}" | jq -r '.[]' | while read URL; do
-            echo "Auditing $URL"
             echo "::debug::Targeting URL = $URL"
+            echo "Auditing $URL"
             node node_modules/cwv-agent/index.js --action prompt --url "$URL" --device mobile --model gpt-4o
             node node_modules/cwv-agent/index.js --action prompt --url "$URL" --device desktop --model gpt-4o
-            
+
             # Normalize URL to folder-safe name
             SAFE_NAME=$(echo "$URL" | sed 's/[^a-zA-Z0-9]/_/g')
 
@@ -80,7 +80,7 @@ jobs:
           for DIR in cwv-output/*; do
             if [ -d "$DIR" ]; then
               NAME=$(basename "$DIR")
-              echo " Uploading artifacts for $NAME"
+              echo "📦 Uploading artifacts for $NAME"
               zip -r "$NAME.zip" "$DIR"
               gh release upload "temp-cwv-release" "$NAME.zip" || echo "Skipped GH release"
               gh api -X POST \
@@ -100,6 +100,7 @@ jobs:
           sudo apt-get update && sudo apt-get install -y tree
           echo "📁 Project structure (excluding node_modules):"
           tree -L 3 -a -I 'node_modules'
+
 
 
 # name: CWV PR Check
