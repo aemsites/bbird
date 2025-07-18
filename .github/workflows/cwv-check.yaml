@@ -73,7 +73,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create GitHub Issues for CWV Suggestions
+      - name: Create GitHub Issues via API (Fallback)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -85,21 +85,35 @@ jobs:
                   jq -c '.[]' "$FILE" | while read suggestion; do
                     TITLE=$(echo "$suggestion" | jq -r '.title')
                     BODY=$(echo "$suggestion" | jq -r '.description')
-                    EXISTS=$(gh issue list --limit 100 --json title | jq --arg TITLE "$TITLE" 'map(select(.title == $TITLE)) | length')
-                    if [ "$EXISTS" -eq 0 ]; then
-                      gh issue create \
-                          --title "$TITLE" \
-                          --body "**URL**: $URL\n\n**Suggestion**:\n$BODY" \
-                          --label "cwv-suggestion" \
-                          --assignee "@github-copilot" || echo "Failed to create issue for $TITLE"
+
+                    # Check if issue already exists using GitHub API
+                    ISSUE_EXISTS=$(curl -s \
+                      -H "Authorization: token $GITHUB_TOKEN" \
+                      -H "Accept: application/vnd.github+json" \
+                      "https://api.github.com/repos/${{ github.repository }}/issues?state=open&per_page=100" \
+                      | jq --arg TITLE "$TITLE" 'map(select(.title == $TITLE)) | length')
+
+                    if [ "$ISSUE_EXISTS" -eq 0 ]; then
+                      echo "Creating issue: $TITLE"
+                      curl -s -X POST \
+                        -H "Authorization: token $GITHUB_TOKEN" \
+                        -H "Accept: application/vnd.github+json" \
+                        https://api.github.com/repos/${{ github.repository }}/issues \
+                        -d "$(jq -n \
+                              --arg title "$TITLE" \
+                              --arg body "**URL**: $URL\n\n**Suggestion**:\n$BODY" \
+                              --argjson labels '["cwv-suggestion"]' \
+                              '{title: $title, body: $body, labels: $labels}')" \
+                        || echo "❌ Failed to create issue for $TITLE"
                     else
-                      echo "Issue for '$TITLE' already exists. Skipping."
+                      echo "Issue already exists for: $TITLE"
                     fi
                   done
                 fi
               done
             fi
           done
+
 
 
       - name: Upload Desktop Report
