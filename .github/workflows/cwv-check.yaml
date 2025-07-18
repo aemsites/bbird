@@ -67,6 +67,35 @@ jobs:
           cp node_modules/cwv-agent/.cache/*.report.gpt4o.summary.md cwv-output/ || echo "No summary reports found."
           cp node_modules/cwv-agent/.cache/*.suggestions.gpt4o.json cwv-output/ || echo "No suggestions found."
 
+
+      - name: Create GitHub Issues for CWV Suggestions
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for DIR in cwv-output/*; do
+            if [ -d "$DIR" ]; then
+              for FILE in "$DIR"/*.suggestions.gpt4o.json; do
+                if [ -f "$FILE" ]; then
+                  URL=$(basename "$DIR" | sed 's/_/\//g')
+                  jq -c '.[]' "$FILE" | while read suggestion; do
+                    TITLE=$(echo "$suggestion" | jq -r '.title')
+                    BODY=$(echo "$suggestion" | jq -r '.description')
+                    EXISTS=$(gh issue list --search "$TITLE" --json title | jq 'map(select(.title == "$TITLE")) | length')
+                    if [ "$EXISTS" -eq 0 ]; then
+                      gh issue create \
+                        --title "$TITLE" \
+                        --body "**URL**: $URL\n\n**Suggestion**:\n$BODY" \
+                        --label "cwv-suggestion" \
+                        --assignee "@github-copilot" || echo "Failed to create issue for $TITLE"
+                    else
+                      echo "Issue for '$TITLE' already exists. Skipping."
+                    fi
+                  done
+                fi
+              done
+            fi
+          done
+
       - name: Upload Desktop Report
         uses: actions/upload-artifact@v4
         with:
