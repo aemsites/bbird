@@ -68,6 +68,11 @@ jobs:
           cp node_modules/cwv-agent/.cache/*.suggestions.gpt4o.json cwv-output/ || echo "No suggestions found."
 
 
+      - name: Authenticate gh CLI
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create GitHub Issues for CWV Suggestions
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -80,13 +85,13 @@ jobs:
                   jq -c '.[]' "$FILE" | while read suggestion; do
                     TITLE=$(echo "$suggestion" | jq -r '.title')
                     BODY=$(echo "$suggestion" | jq -r '.description')
-                    EXISTS=$(gh issue list --search "$TITLE" --json title | jq 'map(select(.title == "$TITLE")) | length')
+                    EXISTS=$(gh issue list --limit 100 --json title | jq --arg TITLE "$TITLE" 'map(select(.title == $TITLE)) | length')
                     if [ "$EXISTS" -eq 0 ]; then
                       gh issue create \
-                        --title "$TITLE" \
-                        --body "**URL**: $URL\n\n**Suggestion**:\n$BODY" \
-                        --label "cwv-suggestion" \
-                        --assignee "@github-copilot" || echo "Failed to create issue for $TITLE"
+                          --title "$TITLE" \
+                          --body "**URL**: $URL\n\n**Suggestion**:\n$BODY" \
+                          --label "cwv-suggestion" \
+                          --assignee "@github-copilot" || echo "Failed to create issue for $TITLE"
                     else
                       echo "Issue for '$TITLE' already exists. Skipping."
                     fi
@@ -95,6 +100,7 @@ jobs:
               done
             fi
           done
+
 
       - name: Upload Desktop Report
         uses: actions/upload-artifact@v4
