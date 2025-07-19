@@ -75,7 +75,39 @@ jobs:
             echo "Cache directory not found"
           fi
 
-      - name: Create GitHub Issues for CWV Suggestions
+      - name: Analyze Project Structure for Copilot Context
+        id: analyze_structure
+        run: |
+          echo "📁 Analyzing project structure for Copilot context..."
+          
+          # Create a project context file for Copilot
+          cat > project-context.md << 'EOF'
+          # Project Structure Analysis for Core Web Vitals Optimization
+          
+          ## AEM Edge Delivery Services Project Structure
+          EOF
+          
+          # Add common AEM EDS patterns
+          if [ -d "scripts" ]; then
+            echo "- ✅ /scripts/ directory found (JavaScript optimization target)" >> project-context.md
+          fi
+          if [ -d "styles" ]; then
+            echo "- ✅ /styles/ directory found (CSS optimization target)" >> project-context.md  
+          fi
+          if [ -d "blocks" ]; then
+            echo "- ✅ /blocks/ directory found (Block-specific optimizations)" >> project-context.md
+          fi
+          if [ -f "head.js" ]; then
+            echo "- ✅ head.js found (Head script optimization target)" >> project-context.md
+          fi
+          
+          echo "" >> project-context.md
+          echo "## Key Files for Performance Optimization:" >> project-context.md
+          find . -name "*.js" -o -name "*.css" | grep -E "(scripts|styles|blocks|head)" | head -20 >> project-context.md
+          
+          cat project-context.md
+
+      - name: Create GitHub Issues for CWV Suggestions  
         id: create_issues
         uses: actions/github-script@v7
         with:
@@ -94,36 +126,146 @@ jobs:
               return `[CWV-${deviceType.toUpperCase()}] ${suggestion.title} - ${urlHost}`;
             }
             
+            // Helper function to create detailed Copilot prompt based on suggestion category
+            function createCopilotPrompt(suggestion, url, deviceType) {
+              const basePrompt = `@github-copilot Please analyze this Core Web Vitals performance issue and implement the suggested optimizations.`;
+              
+              let specificInstructions = '';
+              
+              switch (suggestion.category.toLowerCase()) {
+                case 'javascript':
+                  specificInstructions = `
+            **Focus Areas for JavaScript Optimization:**
+            1. Look for JavaScript files in: \`/scripts/\`, \`/blocks/\`, \`/libs/\`, \`/head.js\`, \`/delayed.js\`
+            2. Identify render-blocking scripts and implement code splitting
+            3. Add \`async\` or \`defer\` attributes where appropriate
+            4. Remove unused JavaScript code and dependencies
+            5. Implement lazy loading for non-critical JavaScript
+            6. For AEM Edge Delivery: Check \`/scripts/scripts.js\` for optimization opportunities
+            
+            **Files to examine:**
+            - \`/scripts/scripts.js\` (main script entry point)
+            - \`/scripts/delayed.js\` (delayed loading scripts)
+            - \`/blocks/**/*.js\` (block-specific scripts)
+            - \`/head.js\` (head scripts)`;
+                  break;
+                  
+                case 'images':
+                  specificInstructions = `
+            **Focus Areas for Image Optimization:**
+            1. Look for image references in: HTML templates, CSS files, JavaScript files
+            2. Implement proper \`loading="eager"\` for above-the-fold images
+            3. Add \`fetchpriority="high"\` to LCP images
+            4. Ensure responsive images with proper \`srcset\` attributes
+            5. Convert to modern formats (WebP, AVIF) where possible
+            6. Add proper width/height attributes to prevent layout shifts
+            
+            **Files to examine:**
+            - \`/blocks/**/*.js\` (for dynamically loaded images)
+            - \`/styles/**/*.css\` (for background images)
+            - HTML templates and content files
+            - \`/scripts/scripts.js\` (for image loading logic)`;
+                  break;
+                  
+                case 'css':
+                case 'styles':
+                  specificInstructions = `
+            **Focus Areas for CSS Optimization:**
+            1. Look for CSS files in: \`/styles/\`, \`/blocks/\`, inline styles
+            2. Identify and extract critical CSS for above-the-fold content
+            3. Implement CSS lazy-loading for non-critical styles
+            4. Remove unused CSS rules and optimize selectors
+            5. Add proper dimensions to prevent Cumulative Layout Shift (CLS)
+            6. For AEM Edge Delivery: Check \`/styles/styles.css\` and block-specific styles
+            
+            **Files to examine:**
+            - \`/styles/styles.css\` (main stylesheet)
+            - \`/styles/lazy-styles.css\` (non-critical styles)
+            - \`/blocks/**/*.css\` (block-specific styles)
+            - \`/head.js\` (for CSS loading logic)`;
+                  break;
+                  
+                case 'third-party':
+                  specificInstructions = `
+            **Focus Areas for Third-party Script Optimization:**
+            1. Audit third-party scripts in: \`/head.js\`, \`/scripts/delayed.js\`
+            2. Implement delayed loading for non-essential third-party scripts
+            3. Add proper \`async\` or \`defer\` attributes
+            4. Consider removing unused third-party dependencies
+            5. Use resource hints (\`dns-prefetch\`, \`preconnect\`) for external domains
+            
+            **Files to examine:**
+            - \`/head.js\` (head-loaded third-party scripts)
+            - \`/scripts/delayed.js\` (delayed third-party scripts)
+            - \`/scripts/scripts.js\` (third-party integrations)`;
+                  break;
+                  
+                default:
+                  specificInstructions = `
+            **General Performance Focus Areas:**
+            1. Examine the entire codebase for performance bottlenecks
+            2. Look for opportunities to optimize ${suggestion.metric} metric
+            3. Focus on ${suggestion.category} related optimizations
+            4. Consider AEM Edge Delivery Services best practices`;
+              }
+              
+              return `${basePrompt}
+
+            **Performance Target:** Improve ${suggestion.metric} by ${suggestion.impact}
+            **Priority:** ${suggestion.priority} | **Effort:** ${suggestion.effort}
+            **Device Focus:** ${deviceType}
+            **URL Tested:** ${url}
+
+            ${specificInstructions}
+
+            **Implementation Strategy:**
+            ${suggestion.implementation}
+
+            **Expected Outcome:**
+            - ${suggestion.metric} improvement of ${suggestion.impact}
+            - Better ${deviceType} performance
+            - Aligned with ${suggestion.effort.toLowerCase()} effort estimation
+
+            **AEM Edge Delivery Context:**
+            This is an AEM Edge Delivery Services project. Please ensure your changes:
+            - Follow AEM EDS patterns and conventions
+            - Don't break the block-based architecture  
+            - Maintain compatibility with the Franklin/Helix pipeline
+            - Consider the impact on both author and publish environments
+
+            @github-copilot Please create a focused PR that addresses this specific performance issue with clear before/after metrics if possible.`;
+            }
+
             // Helper function to create issue body
             function createIssueBody(suggestion, url, deviceType, prNumber) {
-              return `## Core Web Vitals Performance Issue
-            
+              const copilotPrompt = createCopilotPrompt(suggestion, url, deviceType);
+              
+              return `## 🚀 Core Web Vitals Performance Issue
+
             **URL**: ${url}
-            **Device**: ${deviceType}
+            **Device**: ${deviceType} 
             **Metric**: ${suggestion.metric}
             **Priority**: ${suggestion.priority}
             **Effort**: ${suggestion.effort}
             **Expected Impact**: ${suggestion.impact}
             **Category**: ${suggestion.category}
-            
-            ## Description
+
+            ## 📋 Description
             ${suggestion.description}
-            
-            ## Implementation Details
+
+            ## 🛠️ Implementation Details
             ${suggestion.implementation || 'No specific implementation details provided.'}
-            
-            ${suggestion.codeExample ? `## Code Example\n\`\`\`\n${suggestion.codeExample}\n\`\`\`` : ''}
-            
+
+            ${suggestion.codeExample ? `## 💻 Code Example\n\`\`\`\n${suggestion.codeExample}\n\`\`\`` : ''}
+
             ---
-            📝 **Auto-generated from PR #${prNumber}** | 🚀 **Ready for @github-copilot to implement**
-            
-            @github-copilot please analyze this Core Web Vitals performance issue and implement the suggested optimizations. Focus on:
-            1. Locating the relevant files in the codebase that affect ${suggestion.metric}
-            2. Implementing the ${suggestion.category} optimizations described above
-            3. Ensuring the changes align with the expected impact of ${suggestion.impact}
-            4. Following best practices for ${suggestion.metric} optimization
-            
-            The changes should target ${deviceType} performance and be implemented with ${suggestion.effort.toLowerCase()} effort as indicated.`;
+
+            ## 🤖 Copilot Implementation Request
+
+            ${copilotPrompt}
+
+            ---
+            📝 *Auto-generated from PR #${prNumber}*`;
             }
             
             // Helper function to check for duplicate issues
@@ -183,14 +325,16 @@ jobs:
                     const issueBody = createIssueBody(suggestion, url, deviceType, prNumber);
                     const labels = [
                       'cwv-suggestion',
+                      'performance',
                       `cwv-${suggestion.metric.toLowerCase()}`,
                       `priority-${suggestion.priority.toLowerCase()}`,
                       `device-${deviceType}`,
-                      `category-${suggestion.category}`
+                      `category-${suggestion.category}`,
+                      'help wanted' // This helps trigger Copilot's attention
                     ];
                     
-                    // Add GitHub Copilot assignment
-                    const assignees = ['github-copilot'];
+                    // GitHub Copilot doesn't get assigned directly - it responds to mentions in issue body
+                    const assignees = [];
                     
                     try {
                       const issue = await github.rest.issues.create({
@@ -247,18 +391,27 @@ jobs:
             ${issueLinks}
             
             ### What happens next?
-            - 🤖 **GitHub Copilot** has been assigned to each issue and will automatically propose fixes
-            - 📊 **Performance metrics** analyzed: LCP, CLS, and INP
+            - 🤖 **GitHub Copilot** will automatically respond to the @mentions in each issue
+            - 📊 **Performance metrics** analyzed: LCP, CLS, and INP  
             - 🎯 **Prioritized suggestions** based on impact and effort required
             - 📱 **Device-specific** optimizations for both mobile and desktop
             
             Each issue includes:
-            - Detailed implementation guidance
-            - Expected performance impact
-            - Code examples where applicable
+            - Detailed implementation guidance for GitHub Copilot
+            - Expected performance impact and metrics
+            - AEM Edge Delivery specific file paths and context
             - Category-specific labels for easy filtering
             
-            Review the issues above and merge the auto-generated PRs from Copilot when you're ready! 🎉`;
+            **Next Steps:**
+            1. Review the issues above
+            2. Wait for Copilot to respond with PR suggestions  
+            3. Or manually create PRs if Copilot doesn't respond automatically
+            
+            If Copilot doesn't automatically create PRs, you can:
+            - Comment on any issue with "@github-copilot please create a PR for this"
+            - Use the issue descriptions as implementation guides for manual fixes
+            
+            🎉 Happy optimizing!`;
             
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -297,6 +450,306 @@ jobs:
           sudo apt-get update && sudo apt-get install -y tree
           echo "📁 Project structure (excluding node_modules):"
           tree -L 3 -a -I 'node_modules'
+
+# name: CWV PR Check
+
+# on:
+#   pull_request:
+#     types: [opened, synchronize]
+
+# permissions:
+#   contents: write
+#   pull-requests: write
+#   issues: write
+
+# jobs:
+#   run-cwv-check:
+#     runs-on: ubuntu-latest
+#     environment: cwv-check-env-junaid
+
+#     steps:
+#       - name: Checkout repo
+#         uses: actions/checkout@v3
+
+#       - name: Set up Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: '18'
+
+#       - name: Install CWV Agent
+#         run: npm install --no-save git+https://github.com/ramboz/cwv-agent.git
+
+#       - name: Extract URLs from PR Description
+#         id: extract_urls
+#         uses: actions/github-script@v7
+#         with:
+#           github-token: ${{ secrets.GITHUB_TOKEN }}
+#           result-encoding: string
+#           script: |
+#             const pr = await github.rest.pulls.get({
+#               owner: context.repo.owner,
+#               repo: context.repo.repo,
+#               pull_number: context.issue.number,
+#             });
+#             const body = pr.data.body || '';
+#             const urls = [...new Set((body.match(/https:\/\/[\w.-]+--[\w.-]+--[\w.-]+\.aem\.(page|live)\/[\S]*/g) || []))];
+#             if (!urls.length) {
+#               throw new Error('No valid AEM URLs found in PR description');
+#             }
+#             console.log(`Found URLs: ${urls.join(', ')}`);
+#             return JSON.stringify(urls);
+
+#       - name: Run CWV Agent for Each AEM URL
+#         env:
+#           GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+#           AZURE_OPENAI_API_DEPLOYMENT_NAME: ${{ secrets.AZURE_OPENAI_API_DEPLOYMENT_NAME }}
+#           AZURE_OPENAI_API_INSTANCE_NAME: ${{ secrets.AZURE_OPENAI_API_INSTANCE_NAME }}
+#           AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+#           AZURE_OPENAI_API_VERSION: ${{ secrets.AZURE_OPENAI_API_VERSION }}
+#           GOOGLE_PAGESPEED_INSIGHTS_API_KEY: ${{ secrets.GOOGLE_PAGESPEED_INSIGHTS_API_KEY }}
+#           GOOGLE_CRUX_API_KEY: ${{ secrets.GOOGLE_CRUX_API_KEY }}
+#           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "true"
+#           PUPPETEER_EXECUTABLE_PATH: "/usr/bin/google-chrome"
+#         run: |
+#           mkdir -p cwv-output
+#           echo "Running CWV audits for listed AEM URLs..."
+#           echo '${{ steps.extract_urls.outputs.result }}' | jq -r '.[]' | while read URL; do
+#             echo "Auditing $URL"
+#             node node_modules/cwv-agent/index.js --action prompt --url "$URL" --device mobile --model gpt-4o
+#             node node_modules/cwv-agent/index.js --action prompt --url "$URL" --device desktop --model gpt-4o
+#           done
+          
+#           # Copy output files to our directory
+#           if [ -d "node_modules/cwv-agent/.cache" ]; then
+#             cp node_modules/cwv-agent/.cache/*.report.gpt4o.summary.md cwv-output/ 2>/dev/null || echo "No summary reports found."
+#             cp node_modules/cwv-agent/.cache/*.suggestions.gpt4o.json cwv-output/ 2>/dev/null || echo "No suggestions found."
+#             ls -la cwv-output/
+#           else
+#             echo "Cache directory not found"
+#           fi
+
+#       - name: Create GitHub Issues for CWV Suggestions
+#         id: create_issues
+#         uses: actions/github-script@v7
+#         with:
+#           github-token: ${{ secrets.GITHUB_TOKEN }}
+#           script: |
+#             const fs = require('fs');
+#             const path = require('path');
+            
+#             const cwvOutputDir = 'cwv-output';
+#             const issueNumbers = [];
+#             const prNumber = context.issue.number;
+            
+#             // Helper function to create issue title with URL and device info
+#             function createIssueTitle(suggestion, url, deviceType) {
+#               const urlHost = new URL(url).hostname.split('.')[0];
+#               return `[CWV-${deviceType.toUpperCase()}] ${suggestion.title} - ${urlHost}`;
+#             }
+            
+#             // Helper function to create issue body
+#             function createIssueBody(suggestion, url, deviceType, prNumber) {
+#               return `## Core Web Vitals Performance Issue
+            
+#             **URL**: ${url}
+#             **Device**: ${deviceType}
+#             **Metric**: ${suggestion.metric}
+#             **Priority**: ${suggestion.priority}
+#             **Effort**: ${suggestion.effort}
+#             **Expected Impact**: ${suggestion.impact}
+#             **Category**: ${suggestion.category}
+            
+#             ## Description
+#             ${suggestion.description}
+            
+#             ## Implementation Details
+#             ${suggestion.implementation || 'No specific implementation details provided.'}
+            
+#             ${suggestion.codeExample ? `## Code Example\n\`\`\`\n${suggestion.codeExample}\n\`\`\`` : ''}
+            
+#             ---
+#             📝 **Auto-generated from PR #${prNumber}** | 🚀 **Ready for @github-copilot to implement**
+            
+#             @github-copilot please analyze this Core Web Vitals performance issue and implement the suggested optimizations. Focus on:
+#             1. Locating the relevant files in the codebase that affect ${suggestion.metric}
+#             2. Implementing the ${suggestion.category} optimizations described above
+#             3. Ensuring the changes align with the expected impact of ${suggestion.impact}
+#             4. Following best practices for ${suggestion.metric} optimization
+            
+#             The changes should target ${deviceType} performance and be implemented with ${suggestion.effort.toLowerCase()} effort as indicated.`;
+#             }
+            
+#             // Helper function to check for duplicate issues
+#             async function isDuplicateIssue(title) {
+#               try {
+#                 const issues = await github.rest.issues.listForRepo({
+#                   owner: context.repo.owner,
+#                   repo: context.repo.repo,
+#                   state: 'open',
+#                   per_page: 100,
+#                   labels: 'cwv-suggestion'
+#                 });
+                
+#                 return issues.data.some(issue => issue.title === title);
+#               } catch (error) {
+#                 console.log('Error checking for duplicates:', error.message);
+#                 return false;
+#               }
+#             }
+            
+#             try {
+#               // Check if output directory exists
+#               if (!fs.existsSync(cwvOutputDir)) {
+#                 console.log('❌ CWV output directory not found');
+#                 return [];
+#               }
+              
+#               // Process all suggestion files
+#               const suggestionFiles = fs.readdirSync(cwvOutputDir)
+#                 .filter(file => file.endsWith('.suggestions.gpt4o.json'));
+              
+#               console.log(`Found ${suggestionFiles.length} suggestion files`);
+              
+#               for (const filename of suggestionFiles) {
+#                 const filepath = path.join(cwvOutputDir, filename);
+                
+#                 try {
+#                   const content = fs.readFileSync(filepath, 'utf8');
+#                   const data = JSON.parse(content);
+                  
+#                   const url = data.url;
+#                   const deviceType = data.deviceType;
+#                   const suggestions = data.suggestions || [];
+                  
+#                   console.log(`Processing ${suggestions.length} suggestions for ${url} (${deviceType})`);
+                  
+#                   for (const suggestion of suggestions) {
+#                     const issueTitle = createIssueTitle(suggestion, url, deviceType);
+                    
+#                     // Check for duplicates
+#                     const isDuplicate = await isDuplicateIssue(issueTitle);
+#                     if (isDuplicate) {
+#                       console.log(`⚠️ Skipping duplicate issue: ${issueTitle}`);
+#                       continue;
+#                     }
+                    
+#                     const issueBody = createIssueBody(suggestion, url, deviceType, prNumber);
+#                     const labels = [
+#                       'cwv-suggestion',
+#                       `cwv-${suggestion.metric.toLowerCase()}`,
+#                       `priority-${suggestion.priority.toLowerCase()}`,
+#                       `device-${deviceType}`,
+#                       `category-${suggestion.category}`
+#                     ];
+                    
+#                     // Add GitHub Copilot assignment
+#                     const assignees = ['github-copilot'];
+                    
+#                     try {
+#                       const issue = await github.rest.issues.create({
+#                         owner: context.repo.owner,
+#                         repo: context.repo.repo,
+#                         title: issueTitle,
+#                         body: issueBody,
+#                         labels: labels,
+#                         assignees: assignees
+#                       });
+                      
+#                       issueNumbers.push(issue.data.number);
+#                       console.log(`✅ Created issue #${issue.data.number}: ${issueTitle}`);
+                      
+#                       // Add a small delay to avoid rate limiting
+#                       await new Promise(resolve => setTimeout(resolve, 100));
+                      
+#                     } catch (error) {
+#                       console.log(`❌ Failed to create issue for "${issueTitle}": ${error.message}`);
+#                     }
+#                   }
+#                 } catch (error) {
+#                   console.log(`❌ Failed to process file ${filename}: ${error.message}`);
+#                 }
+#               }
+              
+#               console.log(`\n📊 Summary: Created ${issueNumbers.length} issues`);
+#               return issueNumbers;
+              
+#             } catch (error) {
+#               console.log('❌ Error in issue creation process:', error.message);
+#               throw error;
+#             }
+
+#       - name: Comment on PR with Created Issues
+#         if: steps.create_issues.outputs.result != '[]'
+#         uses: actions/github-script@v7
+#         with:
+#           github-token: ${{ secrets.GITHUB_TOKEN }}
+#           script: |
+#             const issueNumbers = ${{ steps.create_issues.outputs.result }};
+            
+#             if (issueNumbers.length === 0) {
+#               console.log('No issues were created to comment about');
+#               return;
+#             }
+            
+#             const issueLinks = issueNumbers.map(num => `- #${num}`).join('\n');
+            
+#             const comment = `## 🚀 Core Web Vitals Analysis Complete
+            
+#             I've analyzed the performance of your AEM pages and created **${issueNumbers.length} optimization issues** with specific suggestions:
+            
+#             ${issueLinks}
+            
+#             ### What happens next?
+#             - 🤖 **GitHub Copilot** has been assigned to each issue and will automatically propose fixes
+#             - 📊 **Performance metrics** analyzed: LCP, CLS, and INP
+#             - 🎯 **Prioritized suggestions** based on impact and effort required
+#             - 📱 **Device-specific** optimizations for both mobile and desktop
+            
+#             Each issue includes:
+#             - Detailed implementation guidance
+#             - Expected performance impact
+#             - Code examples where applicable
+#             - Category-specific labels for easy filtering
+            
+#             Review the issues above and merge the auto-generated PRs from Copilot when you're ready! 🎉`;
+            
+#             await github.rest.issues.createComment({
+#               issue_number: context.issue.number,
+#               owner: context.repo.owner,
+#               repo: context.repo.repo,
+#               body: comment
+#             });
+
+#       - name: Upload Desktop Report
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: desktop-report
+#           path: cwv-output/*.desktop.report.gpt4o.summary.md
+#           if-no-files-found: warn
+#           retention-days: 7
+
+#       - name: Upload Mobile Report
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: mobile-report
+#           path: cwv-output/*.mobile.report.gpt4o.summary.md
+#           if-no-files-found: warn
+#           retention-days: 7
+
+#       - name: Upload Suggestions JSON
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: suggestions-json
+#           path: cwv-output/*.suggestions.gpt4o.json
+#           if-no-files-found: warn
+#           retention-days: 7
+
+#       - name: Print project file tree (excluding node_modules)
+#         if: always()
+#         run: |
+#           sudo apt-get update && sudo apt-get install -y tree
+#           echo "📁 Project structure (excluding node_modules):"
+#           tree -L 3 -a -I 'node_modules'
 
 # name: CWV PR Check
 
