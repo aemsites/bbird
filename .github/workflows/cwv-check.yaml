@@ -190,6 +190,29 @@ jobs:
                 .replace(/^-|-$/g, '');      // Remove leading/trailing hyphens
             }
             
+            // Function to deduplicate suggestions within a file
+            function deduplicateSuggestions(suggestions) {
+              console.log(`🔍 Deduplicating ${suggestions.length} suggestions...`);
+              
+              const uniqueSuggestions = suggestions.filter((suggestion, index, self) => {
+                // Create a unique key based on multiple criteria
+                const suggestionKey = `${suggestion.title || ''}-${suggestion.metric || ''}-${suggestion.category || ''}-${(suggestion.description || '').substring(0, 100)}`;
+                
+                return index === self.findIndex(s => {
+                  const otherKey = `${s.title || ''}-${s.metric || ''}-${s.category || ''}-${(s.description || '').substring(0, 100)}`;
+                  return otherKey === suggestionKey;
+                });
+              });
+              
+              const duplicatesRemoved = suggestions.length - uniqueSuggestions.length;
+              if (duplicatesRemoved > 0) {
+                console.log(`✨ Removed ${duplicatesRemoved} duplicate suggestions`);
+              }
+              
+              console.log(`📊 Final unique suggestions: ${uniqueSuggestions.length}`);
+              return uniqueSuggestions;
+            }
+            
             async function isDuplicateIssue(title) {
               try {
                 const issues = await github.rest.issues.listForRepo({
@@ -265,9 +288,12 @@ jobs:
                   const deviceType = data.deviceType;
                   const suggestions = data.suggestions || [];
                   
-                  console.log(`Processing ${suggestions.length} suggestions for ${url} (${deviceType})`);
+                  console.log(`📄 Processing ${suggestions.length} suggestions for ${url} (${deviceType})`);
                   
-                  for (const suggestion of suggestions) {
+                  // Deduplicate suggestions within this file
+                  const uniqueSuggestions = deduplicateSuggestions(suggestions);
+                  
+                  for (const suggestion of uniqueSuggestions) {
                     const issueTitle = createIssueTitle(suggestion, url, deviceType);
                     
                     const isDuplicate = await isDuplicateIssue(issueTitle);
@@ -366,6 +392,7 @@ jobs:
 
             ### 🤖 What's Happening Automatically:
             - ✅ **Issues Created**: ${issueNumbers.length} specific performance optimizations identified  
+            - 🔍 **Duplicates Filtered**: Removed duplicate suggestions from analysis files
             - 🤖 **Copilot Triggered**: GitHub Copilot is now automatically creating PRs for each issue
             - 📊 **Metrics Analyzed**: LCP, CLS, and INP improvements calculated
             - 🎯 **Prioritized**: Issues ranked by impact and implementation effort
