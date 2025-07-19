@@ -107,6 +107,8 @@ jobs:
           
           cat project-context.md
 
+      # Replace your "Create GitHub Issues for CWV Suggestions" step with this enhanced version:
+
       - name: Create GitHub Issues for CWV Suggestions  
         id: create_issues
         uses: actions/github-script@v7
@@ -120,16 +122,24 @@ jobs:
             const issueNumbers = [];
             const prNumber = context.issue.number;
             
-            // Helper function to create issue title with URL and device info
+            // Get the original PR author to assign final PRs to them
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+            const originalAuthor = pr.data.user.login;
+            
+            // Helper functions (keep your existing ones, but modify createIssueBody)
             function createIssueTitle(suggestion, url, deviceType) {
               const urlHost = new URL(url).hostname.split('.')[0];
               return `[CWV-${deviceType.toUpperCase()}] ${suggestion.title} - ${urlHost}`;
             }
             
-            // Helper function to create detailed Copilot prompt based on suggestion category
-            function createCopilotPrompt(suggestion, url, deviceType) {
-              const basePrompt = `@github-copilot Please analyze this Core Web Vitals performance issue and implement the suggested optimizations.`;
+            function createCopilotPrompt(suggestion, url, deviceType, originalAuthor) {
+              const basePrompt = `@github-copilot Please analyze this Core Web Vitals performance issue and create a PR with the suggested optimizations.`;
               
+              // ... keep your existing switch statement logic ...
               let specificInstructions = '';
               
               switch (suggestion.category.toLowerCase()) {
@@ -141,13 +151,7 @@ jobs:
             3. Add \`async\` or \`defer\` attributes where appropriate
             4. Remove unused JavaScript code and dependencies
             5. Implement lazy loading for non-critical JavaScript
-            6. For AEM Edge Delivery: Check \`/scripts/scripts.js\` for optimization opportunities
-            
-            **Files to examine:**
-            - \`/scripts/scripts.js\` (main script entry point)
-            - \`/scripts/delayed.js\` (delayed loading scripts)
-            - \`/blocks/**/*.js\` (block-specific scripts)
-            - \`/head.js\` (head scripts)`;
+            6. For AEM Edge Delivery: Check \`/scripts/scripts.js\` for optimization opportunities`;
                   break;
                   
                 case 'images':
@@ -156,15 +160,7 @@ jobs:
             1. Look for image references in: HTML templates, CSS files, JavaScript files
             2. Implement proper \`loading="eager"\` for above-the-fold images
             3. Add \`fetchpriority="high"\` to LCP images
-            4. Ensure responsive images with proper \`srcset\` attributes
-            5. Convert to modern formats (WebP, AVIF) where possible
-            6. Add proper width/height attributes to prevent layout shifts
-            
-            **Files to examine:**
-            - \`/blocks/**/*.js\` (for dynamically loaded images)
-            - \`/styles/**/*.css\` (for background images)
-            - HTML templates and content files
-            - \`/scripts/scripts.js\` (for image loading logic)`;
+            4. Ensure responsive images with proper \`srcset\` attributes`;
                   break;
                   
                 case 'css':
@@ -174,39 +170,14 @@ jobs:
             1. Look for CSS files in: \`/styles/\`, \`/blocks/\`, inline styles
             2. Identify and extract critical CSS for above-the-fold content
             3. Implement CSS lazy-loading for non-critical styles
-            4. Remove unused CSS rules and optimize selectors
-            5. Add proper dimensions to prevent Cumulative Layout Shift (CLS)
-            6. For AEM Edge Delivery: Check \`/styles/styles.css\` and block-specific styles
-            
-            **Files to examine:**
-            - \`/styles/styles.css\` (main stylesheet)
-            - \`/styles/lazy-styles.css\` (non-critical styles)
-            - \`/blocks/**/*.css\` (block-specific styles)
-            - \`/head.js\` (for CSS loading logic)`;
-                  break;
-                  
-                case 'third-party':
-                  specificInstructions = `
-            **Focus Areas for Third-party Script Optimization:**
-            1. Audit third-party scripts in: \`/head.js\`, \`/scripts/delayed.js\`
-            2. Implement delayed loading for non-essential third-party scripts
-            3. Add proper \`async\` or \`defer\` attributes
-            4. Consider removing unused third-party dependencies
-            5. Use resource hints (\`dns-prefetch\`, \`preconnect\`) for external domains
-            
-            **Files to examine:**
-            - \`/head.js\` (head-loaded third-party scripts)
-            - \`/scripts/delayed.js\` (delayed third-party scripts)
-            - \`/scripts/scripts.js\` (third-party integrations)`;
+            4. Remove unused CSS rules and optimize selectors`;
                   break;
                   
                 default:
                   specificInstructions = `
             **General Performance Focus Areas:**
             1. Examine the entire codebase for performance bottlenecks
-            2. Look for opportunities to optimize ${suggestion.metric} metric
-            3. Focus on ${suggestion.category} related optimizations
-            4. Consider AEM Edge Delivery Services best practices`;
+            2. Look for opportunities to optimize ${suggestion.metric} metric`;
               }
               
               return `${basePrompt}
@@ -221,24 +192,24 @@ jobs:
             **Implementation Strategy:**
             ${suggestion.implementation}
 
+            **IMPORTANT INSTRUCTIONS:**
+            1. Create a new branch for this fix
+            2. Implement the code changes directly in the repository
+            3. Create a PR with the fixes
+            4. Assign the PR to: @${originalAuthor}
+            5. Link this issue to the PR
+            6. Include before/after performance impact in PR description
+
             **Expected Outcome:**
             - ${suggestion.metric} improvement of ${suggestion.impact}
             - Better ${deviceType} performance
-            - Aligned with ${suggestion.effort.toLowerCase()} effort estimation
+            - PR assigned to original author: @${originalAuthor}
 
-            **AEM Edge Delivery Context:**
-            This is an AEM Edge Delivery Services project. Please ensure your changes:
-            - Follow AEM EDS patterns and conventions
-            - Don't break the block-based architecture  
-            - Maintain compatibility with the Franklin/Helix pipeline
-            - Consider the impact on both author and publish environments
-
-            @github-copilot Please create a focused PR that addresses this specific performance issue with clear before/after metrics if possible.`;
+            Please proceed with creating the PR immediately.`;
             }
 
-            // Helper function to create issue body
-            function createIssueBody(suggestion, url, deviceType, prNumber) {
-              const copilotPrompt = createCopilotPrompt(suggestion, url, deviceType);
+            function createIssueBody(suggestion, url, deviceType, prNumber, originalAuthor) {
+              const copilotPrompt = createCopilotPrompt(suggestion, url, deviceType, originalAuthor);
               
               return `## 🚀 Core Web Vitals Performance Issue
 
@@ -249,6 +220,7 @@ jobs:
             **Effort**: ${suggestion.effort}
             **Expected Impact**: ${suggestion.impact}
             **Category**: ${suggestion.category}
+            **Original PR Author**: @${originalAuthor}
 
             ## 📋 Description
             ${suggestion.description}
@@ -265,10 +237,11 @@ jobs:
             ${copilotPrompt}
 
             ---
-            📝 *Auto-generated from PR #${prNumber}*`;
+            📝 *Auto-generated from PR #${prNumber}*
+            🎯 *Auto-assigned to Copilot for immediate PR creation*`;
             }
             
-            // Helper function to check for duplicate issues
+            // ... keep your duplicate checking function ...
             async function isDuplicateIssue(title) {
               try {
                 const issues = await github.rest.issues.listForRepo({
@@ -287,13 +260,12 @@ jobs:
             }
             
             try {
-              // Check if output directory exists
+              // ... keep your existing file processing logic ...
               if (!fs.existsSync(cwvOutputDir)) {
                 console.log('❌ CWV output directory not found');
                 return [];
               }
               
-              // Process all suggestion files
               const suggestionFiles = fs.readdirSync(cwvOutputDir)
                 .filter(file => file.endsWith('.suggestions.gpt4o.json'));
               
@@ -315,14 +287,13 @@ jobs:
                   for (const suggestion of suggestions) {
                     const issueTitle = createIssueTitle(suggestion, url, deviceType);
                     
-                    // Check for duplicates
                     const isDuplicate = await isDuplicateIssue(issueTitle);
                     if (isDuplicate) {
                       console.log(`⚠️ Skipping duplicate issue: ${issueTitle}`);
                       continue;
                     }
                     
-                    const issueBody = createIssueBody(suggestion, url, deviceType, prNumber);
+                    const issueBody = createIssueBody(suggestion, url, deviceType, prNumber, originalAuthor);
                     const labels = [
                       'cwv-suggestion',
                       'performance',
@@ -330,11 +301,11 @@ jobs:
                       `priority-${suggestion.priority.toLowerCase()}`,
                       `device-${deviceType}`,
                       `category-${suggestion.category}`,
-                      'help wanted' // This helps trigger Copilot's attention
+                      'copilot-assigned'
                     ];
                     
-                    // GitHub Copilot doesn't get assigned directly - it responds to mentions in issue body
-                    const assignees = [];
+                    // KEY CHANGE: Assign to Copilot instead of just mentioning
+                    const assignees = ['copilot[bot]']; // This assigns the issue directly to Copilot
                     
                     try {
                       const issue = await github.rest.issues.create({
@@ -343,17 +314,34 @@ jobs:
                         title: issueTitle,
                         body: issueBody,
                         labels: labels,
-                        assignees: assignees
+                        assignees: assignees  // This is the crucial change
                       });
                       
                       issueNumbers.push(issue.data.number);
-                      console.log(`✅ Created issue #${issue.data.number}: ${issueTitle}`);
+                      console.log(`✅ Created issue #${issue.data.number}: ${issueTitle} (assigned to Copilot)`);
                       
-                      // Add a small delay to avoid rate limiting
                       await new Promise(resolve => setTimeout(resolve, 100));
                       
                     } catch (error) {
                       console.log(`❌ Failed to create issue for "${issueTitle}": ${error.message}`);
+                      // If copilot assignment fails, try without assignment
+                      if (error.message.includes('copilot')) {
+                        console.log(`Retrying without Copilot assignment...`);
+                        try {
+                          const issue = await github.rest.issues.create({
+                            owner: context.repo.owner,
+                            repo: context.repo.repo,
+                            title: issueTitle,
+                            body: issueBody,
+                            labels: labels,
+                            assignees: []
+                          });
+                          issueNumbers.push(issue.data.number);
+                          console.log(`✅ Created issue #${issue.data.number} without assignment`);
+                        } catch (retryError) {
+                          console.log(`❌ Retry also failed: ${retryError.message}`);
+                        }
+                      }
                     }
                   }
                 } catch (error) {
@@ -361,7 +349,7 @@ jobs:
                 }
               }
               
-              console.log(`\n📊 Summary: Created ${issueNumbers.length} issues`);
+              console.log(`\n📊 Summary: Created ${issueNumbers.length} issues assigned to Copilot`);
               return issueNumbers;
               
             } catch (error) {
