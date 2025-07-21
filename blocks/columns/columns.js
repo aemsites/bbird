@@ -1,9 +1,12 @@
-export default function decorate(block) {
+import { processInChunks } from '../../scripts/utils.js';
+
+export default async function decorate(block) {
   const cols = [...block.firstElementChild.children];
   block.classList.add(`columns-${cols.length}-cols`);
 
-  // setup image columns
-  [...block.children].forEach((row) => {
+  // Setup image columns with chunked processing
+  const rows = [...block.children];
+  await processInChunks(rows, (row) => {
     [...row.children].forEach((col) => {
       const pic = col.querySelector('picture');
       if (pic) {
@@ -14,5 +17,5 @@ export default function decorate(block) {
         }
       }
     });
-  });
+  }, { chunkSize: 3, priority: 'user-visible' });
 }

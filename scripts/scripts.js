@@ -15,7 +15,7 @@ import {
   decorateBlock,
 } from './aem.js';
 
-import createElement from './utils.js';
+import createElement, { scheduleTask, defer } from './utils.js';
 
 /**
  * Builds hero block and prepends to main in a new section.
@@ -96,17 +96,34 @@ const setupPreflightListener = () => {
 };
 
 /**
- * Decorates the main element.
+ * Decorates the main element with optimized task scheduling
+ * Breaking down synchronous operations to minimize long tasks
  * @param {Element} main The main element
  */
 // eslint-disable-next-line import/prefer-default-export
-export function decorateMain(main) {
-  // hopefully forward compatible button decoration
-  decorateButtons(main);
-  decorateIcons(main);
-  buildAutoBlocks(main);
-  decorateSections(main);
-  decorateBlocks(main);
+export async function decorateMain(main) {
+  // Critical path: buttons and icons (user-visible priority)
+  await scheduleTask(() => {
+    decorateButtons(main);
+  }, { priority: 'user-visible' });
+
+  await scheduleTask(() => {
+    decorateIcons(main);
+  }, { priority: 'user-visible' });
+
+  // Less critical: auto blocks (can use background priority)
+  await scheduleTask(() => {
+    buildAutoBlocks(main);
+  }, { priority: 'background' });
+
+  // Defer sections and blocks decoration to avoid blocking interaction
+  await defer(() => {
+    decorateSections(main);
+  });
+
+  await defer(() => {
+    decorateBlocks(main);
+  });
 }
 
 /**
@@ -118,7 +135,7 @@ async function loadEager(doc) {
   decorateTemplateAndTheme();
   const main = doc.querySelector('main');
   if (main) {
-    decorateMain(main);
+    await decorateMain(main);
     document.body.classList.add('appear');
     await loadSection(main.querySelector('.section'), waitForFirstImage);
   }
@@ -126,7 +143,8 @@ async function loadEager(doc) {
   try {
     /* if desktop (proxy for fast connection) or fonts already loaded, load fonts.css */
     if (window.innerWidth >= 900 || sessionStorage.getItem('fonts-loaded')) {
-      loadFonts();
+      // Defer font loading to avoid blocking critical rendering
+      defer(() => loadFonts(), 'background');
     }
   } catch (e) {
     // do nothing
@@ -145,12 +163,24 @@ async function loadLazy(doc) {
   const element = hash ? doc.getElementById(hash.substring(1)) : false;
   if (hash && element) element.scrollIntoView();
 
-  loadHeader(doc.querySelector('header'));
-  loadFooter(doc.querySelector('footer'));
+  // Defer header and footer loading to reduce main thread blocking
+  defer(() => {
+    loadHeader(doc.querySelector('header'));
+  }, 'user-visible');
 
-  loadCSS(`${window.hlx.codeBasePath}/styles/lazy-styles.css`);
-  loadFonts();
-  setupPreflightListener();
+  defer(() => {
+    loadFooter(doc.querySelector('footer'));
+  }, 'user-visible');
+
+  // Defer non-critical CSS and font loading
+  defer(() => {
+    loadCSS(`${window.hlx.codeBasePath}/styles/lazy-styles.css`);
+    loadFonts();
+  }, 'background');
+
+  defer(() => {
+    setupPreflightListener();
+  }, 'background');
 }
 
 /**
