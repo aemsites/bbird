@@ -1,11 +1,15 @@
 import runSeoChecks from './preflight-checks/seo.js';
 import runGeneralChecks from './preflight-checks/general.js';
 import runAccessibilityChecks from './preflight-checks/accessibility.js';
+import { scheduleTask } from '../../scripts/utils.js';
 
 export default async function decorate(el) {
-  const seoResults = runSeoChecks();
-  const generalResults = runGeneralChecks();
-  const accessibilityResults = runAccessibilityChecks();
+  // Run checks asynchronously to avoid blocking the main thread
+  const [seoResults, generalResults, accessibilityResults] = await Promise.all([
+    scheduleTask(() => runSeoChecks(), { priority: 'background' }),
+    scheduleTask(() => runGeneralChecks(), { priority: 'background' }),
+    scheduleTask(() => runAccessibilityChecks(), { priority: 'background' }),
+  ]);
 
   const createResultsHtml = (results) => results.map((result) => `
     <div class="seo-item ${result.icon}">
@@ -14,7 +18,8 @@ export default async function decorate(el) {
     </div>
   `).join('');
 
-  const html = `
+  // Defer HTML generation to avoid blocking
+  const html = await scheduleTask(() => `
     <div class="preflight-results">
       <h1>CME Group Preflight Check</h1>
       
@@ -39,7 +44,7 @@ export default async function decorate(el) {
         </div>
       </details>
     </div>
-  `;
+  `, { priority: 'background' });
 
   el.innerHTML = html;
 }
