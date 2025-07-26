@@ -303,33 +303,16 @@ jobs:
                     
                     // Remove any empty or invalid labels
                     const validLabels = labels.filter(label => label && label.length > 0 && !label.includes(' '));
-                    let canAssignCopilot = false;
+                    
                     try {
-                      const result = await github.rest.issues.listAssignees({
+                      const issue = await github.rest.issues.create({
                         owner: context.repo.owner,
-                        repo: context.repo.repo
+                        repo: context.repo.repo,
+                        title: issueTitle,
+                        body: issueBody,
+                        labels: validLabels,
                       });
-                        const assignableLogins = result.data.map(user => user.login);
-                        console.log("✅ Assignable logins:", assignableLogins);
-                        canAssignCopilot = assignableLogins.includes('github');
-                        } catch (err) {
-                          console.log("⚠️ Could not fetch assignable users:", err.message);
-                        }     
-                        const issueData = {
-                          owner: context.repo.owner,
-                          repo: context.repo.repo,
-                          title: issueTitle,
-                          body: issueBody,
-                          labels: validLabels
-                        };
-                        if (canAssignCopilot) {
-                          issueData.assignees = ['github'];
-                          console.log('✅ Assigning issue to GitHub Copilot');
-                        } else {
-                            console.log("⚠️ Copilot not assignable via API. Skipping assignment.");
-                        }
-
-                        const issue = await github.rest.issues.create(issueData);
+                      
                       issueNumbers.push(issue.data.number);
                       console.log(`✅ Created issue #${issue.data.number}: ${issueTitle}`);
                       
