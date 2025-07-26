@@ -288,6 +288,7 @@ function getMetadata(name, doc = document) {
  * @param {string} [alt] The image alternative text
  * @param {boolean} [eager] Set loading attribute to eager
  * @param {Array} [breakpoints] Breakpoints and corresponding params (eg. width)
+ * @param {string} [fetchPriority] Set fetchpriority attribute (high, low, auto)
  * @returns {Element} The picture element
  */
 function createOptimizedPicture(
@@ -295,6 +296,7 @@ function createOptimizedPicture(
   alt = '',
   eager = false,
   breakpoints = [{ media: '(min-width: 600px)', width: '2000' }, { width: '750' }],
+  fetchPriority = '',
 ) {
   const url = new URL(src, window.location.href);
   const picture = document.createElement('picture');
@@ -321,6 +323,9 @@ function createOptimizedPicture(
       const img = document.createElement('img');
       img.setAttribute('loading', eager ? 'eager' : 'lazy');
       img.setAttribute('alt', alt);
+      if (fetchPriority) {
+        img.setAttribute('fetchpriority', fetchPriority);
+      }
       picture.appendChild(img);
       img.setAttribute('src', `${pathname}?width=${br.width}&format=${ext}&optimize=medium`);
     }
@@ -660,6 +665,7 @@ async function waitForFirstImage(section) {
   await new Promise((resolve) => {
     if (lcpCandidate && !lcpCandidate.complete) {
       lcpCandidate.setAttribute('loading', 'eager');
+      lcpCandidate.setAttribute('fetchpriority', 'high');
       lcpCandidate.addEventListener('load', resolve);
       lcpCandidate.addEventListener('error', resolve);
     } else {
