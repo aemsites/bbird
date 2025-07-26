@@ -46,7 +46,6 @@ jobs:
             }
             console.log(`Found URLs: ${urls.join(', ')}`);
             return JSON.stringify(urls);
-
       - name: Run CWV Agent for Each AEM URL
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
@@ -75,7 +74,6 @@ jobs:
           else
             echo "Cache directory not found"
           fi
-
       - name: Analyze Project Structure for Copilot Context
         id: analyze_structure
         run: |
@@ -107,8 +105,6 @@ jobs:
           find . -name "*.js" -o -name "*.css" | grep -E "(scripts|styles|blocks|head)" | head -20 >> project-context.md
           
           cat project-context.md
-
-
       - name: Create GitHub Issues and Auto-Trigger Copilot PRs
         id: create_issues
         uses: actions/github-script@v7
@@ -138,7 +134,6 @@ jobs:
             
             function createIssueBody(suggestion, url, deviceType, prNumber, originalAuthor) {
               return `## 🚀 Core Web Vitals Performance Issue
-
             **URL**: ${url}
             **Device**: ${deviceType} 
             **Metric**: ${suggestion.metric}
@@ -147,15 +142,11 @@ jobs:
             **Expected Impact**: ${suggestion.impact}
             **Category**: ${suggestion.category}
             **Original PR Author**: @${originalAuthor}
-
             ## 📋 Description
             ${suggestion.description}
-
             ## 🛠️ Implementation Details
             ${suggestion.implementation || 'No specific implementation details provided.'}
-
             ${suggestion.codeExample ? `## 💻 Code Example\n\`\`\`\n${suggestion.codeExample}\n\`\`\`` : ''}
-
             ## 🎯 AEM-Specific Implementation Guide
             
             ### File Locations to Check:
@@ -172,12 +163,10 @@ jobs:
             - Look for image references in blocks and templates
             - Implement proper \`loading\` and \`fetchpriority\` attributes
             - Check responsive image implementations` : ''}
-
             ### Performance Target:
             - **Metric**: ${suggestion.metric}
             - **Expected Improvement**: ${suggestion.impact}
             - **Device Focus**: ${deviceType}
-
             ---
             📝 *Auto-generated from PR #${prNumber}*
             🤖 *GitHub Copilot will automatically create a PR for this optimization*`;
@@ -231,11 +220,9 @@ jobs:
                 return false;
               }
             }
-
             // Function to trigger Copilot PR creation automatically
             async function triggerCopilotPR(issueNumber, suggestion, url, deviceType, originalAuthor) {
               const copilotPrompt = `@github-copilot please create a PR to fix this Core Web Vitals performance issue.
-
             **Implementation Requirements:**
             1. Create a new branch named: \`cwv-fix-${issueNumber}-${suggestion.metric.toLowerCase()}-${deviceType}\`
             2. Implement the optimization described in this issue
@@ -244,15 +231,12 @@ jobs:
             5. Create PR with detailed performance impact description
             6. Assign PR to @${originalAuthor}
             7. Link this issue to the PR
-
             **AEM-Specific Context:**
             - This is an AEM Edge Delivery Services project
             - Look for optimization opportunities in /scripts/, /styles/, /blocks/ directories
             - Maintain AEM EDS architectural patterns
             - Test URL: ${url}
-
             Please proceed with creating the optimization PR immediately.`;
-
               try {
                 await github.rest.issues.createComment({
                   owner: context.repo.owner,
@@ -319,30 +303,33 @@ jobs:
                     
                     // Remove any empty or invalid labels
                     const validLabels = labels.filter(label => label && label.length > 0 && !label.includes(' '));
-                    
+                    let canAssignCopilot = false;
                     try {
-                        const result = await github.rest.issues.listAssignees({
-                          owner: context.repo.owner,
-                          repo: context.repo.repo
-                        });
-
+                      const result = await github.rest.issues.listAssignees({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo
+                      });
                         const assignableLogins = result.data.map(user => user.login);
                         console.log("✅ Assignable logins:", assignableLogins);
-
                         canAssignCopilot = assignableLogins.includes('github');
-                }                        
-                      catch (err) {
-                        console.log("⚠️ Could not fetch assignable users:", err.message);
+                        } catch (err) {
+                          console.log("⚠️ Could not fetch assignable users:", err.message);
+                        }     
+                        const issueData = {
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          title: issueTitle,
+                          body: issueBody,
+                          labels: validLabels
+                        };
+                        if (canAssignCopilot) {
+                          issueData.assignees = ['github'];
+                          console.log('✅ Assigning issue to GitHub Copilot');
+                        } else {
+                            console.log("⚠️ Copilot not assignable via API. Skipping assignment.");
                         }
-                      const issue = await github.rest.issues.create({
-                        owner: context.repo.owner,
-                        repo: context.repo.repo,
-                        title: issueTitle,
-                        body: issueBody,
-                        labels: validLabels,
-                        assignees: ['github'],
-                      });
-                      
+
+                        const issue = await github.rest.issues.create(issueData);
                       issueNumbers.push(issue.data.number);
                       console.log(`✅ Created issue #${issue.data.number}: ${issueTitle}`);
                       
@@ -382,7 +369,6 @@ jobs:
               console.log('❌ Error in issue creation process:', error.message);
               throw error;
             }
-
       - name: Comment on PR with Created Issues and Auto-PRs
         if: steps.create_issues.outputs.result != '[]'
         uses: actions/github-script@v7
@@ -399,13 +385,9 @@ jobs:
             const issueLinks = issueNumbers.map(num => `- #${num}`).join('\n');
             
             const comment = `## 🚀 Core Web Vitals Analysis Complete - Fully Automated!
-
             ✨ **Automated Performance Optimization in Progress**
-
             I've analyzed your AEM pages and **automatically triggered ${issueNumbers.length} GitHub Copilot PRs** for performance optimizations:
-
             ${issueLinks}
-
             ### 🤖 What's Happening Automatically:
             - ✅ **Issues Created**: ${issueNumbers.length} specific performance optimizations identified  
             - 🔍 **Duplicates Filtered**: Removed duplicate suggestions from analysis files
@@ -414,22 +396,18 @@ jobs:
             - 🎯 **Prioritized**: Issues ranked by impact and implementation effort
             - 📱 **Device-Specific**: Separate optimizations for mobile and desktop
             - 👤 **Auto-Assigned**: All generated PRs will be assigned to you (@${context.payload.pull_request.user.login})
-
             ### 📈 Expected Outcomes:
             - **No manual intervention required** - PRs are being created automatically
             - **Performance improvements** based on real Core Web Vitals data
             - **AEM-specific optimizations** targeting /scripts/, /styles/, /blocks/ directories
             - **Ready-to-merge PRs** with detailed implementation notes
-
             ### 🔄 Next Steps (All Automatic):
             1. 🤖 Copilot analyzes your codebase for each optimization
             2. 🔧 PRs are created with specific performance fixes
             3. 📝 PRs include before/after performance impact descriptions
             4. ✅ PRs are automatically assigned to you for review
             5. 🔗 Issues are linked to their corresponding PRs
-
             **Monitor the "Pull Requests" tab** to see the automated PRs as they're created!
-
             ---
             🎉 **Fully automated Core Web Vitals optimization powered by GitHub Copilot**
             ⏱️ *PRs should appear within the next few minutes*`;
@@ -440,7 +418,6 @@ jobs:
               repo: context.repo.repo,
               body: comment
             });
-
       - name: Upload Desktop Report
         uses: actions/upload-artifact@v4
         with:
@@ -466,6 +443,11 @@ jobs:
           retention-days: 7
 
       - name: Print project file tree (excluding node_modules)
+        if: always()
+        run: |
+          sudo apt-get update && sudo apt-get install -y tree
+          echo "📁 Project structure (excluding node_modules):"
+          tree -L 3 -a -I 'node_modules'
         if: always()
         run: |
           sudo apt-get update && sudo apt-get install -y tree
