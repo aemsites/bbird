@@ -327,7 +327,7 @@ jobs:
                         title: issueTitle,
                         body: issueBody,
                         labels: validLabels,
-                        assignees: ['Copilot'],
+                        assignees: ['github-copilot'],
                       });
                       
                       issueNumbers.push(issue.data.number);
