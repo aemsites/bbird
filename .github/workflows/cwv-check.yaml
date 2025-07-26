@@ -321,6 +321,19 @@ jobs:
                     const validLabels = labels.filter(label => label && label.length > 0 && !label.includes(' '));
                     
                     try {
+                        const result = await github.rest.issues.listAssignees({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo
+                        });
+
+                        const assignableLogins = result.data.map(user => user.login);
+                        console.log("✅ Assignable logins:", assignableLogins);
+
+                        canAssignCopilot = assignableLogins.includes('github');
+                }                        
+                      catch (err) {
+                        console.log("⚠️ Could not fetch assignable users:", err.message);
+                        }
                       const issue = await github.rest.issues.create({
                         owner: context.repo.owner,
                         repo: context.repo.repo,
