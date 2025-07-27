@@ -105,8 +105,7 @@ jobs:
           fi
           if [ -f "head.js" ]; then
             echo "- ✅ head.js found (Head script optimization target)" >> project-context.md
-          fi
-          
+          fi  
           echo "" >> project-context.md
           echo "## Key Files for Performance Optimization:" >> project-context.md
           find . -name "*.js" -o -name "*.css" | grep -E "(scripts|styles|blocks|head)" | head -20 >> project-context.md
