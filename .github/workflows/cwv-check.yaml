@@ -74,6 +74,14 @@ jobs:
           else
             echo "Cache directory not found"
           fi
+      - name: Upload Suggestions JSON
+        uses: actions/upload-artifact@v4
+        with:
+          name: suggestions-json
+          path: cwv-output/*.suggestions.gpt4o.json
+          if-no-files-found: error
+          retention-days: 1
+      
       - name: Analyze Project Structure for Copilot Context
         id: analyze_structure
         run: |
@@ -105,11 +113,84 @@ jobs:
           find . -name "*.js" -o -name "*.css" | grep -E "(scripts|styles|blocks|head)" | head -20 >> project-context.md
           
           cat project-context.md
-      - name: Create GitHub Issues and Auto-Trigger Copilot PRs
-        id: create_issues
+
+      - name: Verify Copilot Availability and Get Bot ID
+        id: get_copilot_id
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.MY_PAT_TOKEN }}
+          script: |
+            // First, verify Copilot is available in this repository
+            const query = `
+              query($owner: String!, $name: String!) {
+                repository(owner: $owner, name: $name) {
+                  suggestedActors(capabilities: [CAN_BE_ASSIGNED], first: 100) {
+                    nodes {
+                      login
+                      __typename
+                      ... on Bot {
+                        id
+                      }
+                      ... on User {
+                        id
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+            
+            const variables = {
+              owner: context.repo.owner,
+              name: context.repo.repo
+            };
+            
+            try {
+              const response = await github.graphql(query, variables);
+              const suggestedActors = response.repository.suggestedActors.nodes;
+              
+              console.log('🔍 Available suggested actors:', JSON.stringify(suggestedActors, null, 2));
+              
+              // Find the Copilot coding agent
+              const copilotAgent = suggestedActors.find(actor => 
+                actor.login === 'copilot-swe-agent' || 
+                actor.login === 'github-copilot[bot]'
+              );
+              
+              if (copilotAgent) {
+                console.log('✅ Copilot coding agent found:', copilotAgent);
+                core.setOutput('copilot_available', 'true');
+                core.setOutput('copilot_id', copilotAgent.id);
+                core.setOutput('copilot_login', copilotAgent.login);
+                return {
+                  available: true,
+                  id: copilotAgent.id,
+                  login: copilotAgent.login
+                };
+              } else {
+                console.log('❌ Copilot coding agent not found in suggested actors');
+                console.log('Available actors:', suggestedActors.map(a => a.login));
+                core.setOutput('copilot_available', 'false');
+                return {
+                  available: false,
+                  message: 'Copilot coding agent not available in this repository'
+                };
+              }
+            } catch (error) {
+              console.log('❌ Error checking Copilot availability:', error);
+              core.setOutput('copilot_available', 'false');
+              return {
+                available: false,
+                error: error.message
+              };
+            }
+
+      - name: Create GitHub Issues and Auto-Trigger Copilot PRs
+        id: create_issues
+        if: steps.get_copilot_id.outputs.copilot_available == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.MY_PAT_TOKEN }}
           script: |
             const fs = require('fs');
             const path = require('path');
@@ -117,6 +198,11 @@ jobs:
             const cwvOutputDir = 'cwv-output';
             const issueNumbers = [];
             const prNumber = context.issue.number;
+            const copilotId = '${{ steps.get_copilot_id.outputs.copilot_id }}';
+            const copilotLogin = '${{ steps.get_copilot_id.outputs.copilot_login }}';
+            
+            console.log('🤖 Using Copilot ID:', copilotId);
+            console.log('🤖 Using Copilot Login:', copilotLogin);
             
             // Get the original PR author to assign final PRs to them
             const pr = await github.rest.pulls.get({
@@ -220,9 +306,53 @@ jobs:
                 return false;
               }
             }
+
+            // FIXED: Proper Copilot assignment using GraphQL
+            async function assignCopilotAgent(issueNodeId) {
+              console.log(`🤖 Assigning Copilot agent to issue with node ID: ${issueNodeId}`);
+              
+              const mutation = `
+                mutation($assignableId: ID!, $actorIds: [ID!]!) {
+                  replaceActorsForAssignable(input: {
+                    assignableId: $assignableId,
+                    actorIds: $actorIds
+                  }) {
+                    assignable {
+                      ... on Issue {
+                        id
+                        title
+                        assignees(first: 10) {
+                          nodes {
+                            login
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `;
+              
+              const variables = {
+                assignableId: issueNodeId,
+                actorIds: [copilotId]
+              };
+              
+              try {
+                const result = await github.graphql(mutation, variables);
+                console.log('✅ Copilot agent successfully assigned to issue');
+                console.log('📋 Current assignees:', result.replaceActorsForAssignable.assignable.assignees.nodes.map(n => n.login));
+                return true;
+              } catch (error) {
+                console.log(`❌ Copilot assignment failed: ${error.message}`);
+                console.log('🔍 Error details:', JSON.stringify(error, null, 2));
+                return false;
+              }
+            }
+
             // Function to trigger Copilot PR creation automatically
             async function triggerCopilotPR(issueNumber, suggestion, url, deviceType, originalAuthor) {
-              const copilotPrompt = `@github-copilot please create a PR to fix this Core Web Vitals performance issue.
+              const copilotPrompt = `@${copilotLogin} please create a PR to fix this Core Web Vitals performance issue.
+
             **Implementation Requirements:**
             1. Create a new branch named: \`cwv-fix-${issueNumber}-${suggestion.metric.toLowerCase()}-${deviceType}\`
             2. Implement the optimization described in this issue
@@ -231,12 +361,15 @@ jobs:
             5. Create PR with detailed performance impact description
             6. Assign PR to @${originalAuthor}
             7. Link this issue to the PR
+
             **AEM-Specific Context:**
             - This is an AEM Edge Delivery Services project
             - Look for optimization opportunities in /scripts/, /styles/, /blocks/ directories
             - Maintain AEM EDS architectural patterns
             - Test URL: ${url}
+
             Please proceed with creating the optimization PR immediately.`;
+
               try {
                 await github.rest.issues.createComment({
                   owner: context.repo.owner,
@@ -315,25 +448,34 @@ jobs:
                       
                       issueNumbers.push(issue.data.number);
                       console.log(`✅ Created issue #${issue.data.number}: ${issueTitle}`);
+
+                      // FIXED: Wait a moment, then assign Copilot
+                      await new Promise(resolve => setTimeout(resolve, 2000));
                       
-                      // Wait a moment before triggering Copilot
-                      await new Promise(resolve => setTimeout(resolve, 1000));
+                      const assignmentSuccess = await assignCopilotAgent(issue.data.node_id);
                       
-                      // Automatically trigger Copilot PR creation
-                      const copilotTriggered = await triggerCopilotPR(
-                        issue.data.number, 
-                        suggestion, 
-                        url, 
-                        deviceType, 
-                        originalAuthor
-                      );
-                      
-                      if (copilotTriggered) {
-                        console.log(`🤖 Copilot automatically triggered for issue #${issue.data.number}`);
+                      if (assignmentSuccess) {
+                        // Wait a bit more before triggering the PR request
+                        await new Promise(resolve => setTimeout(resolve, 3000));
+                        
+                        // Automatically trigger Copilot PR creation
+                        const copilotTriggered = await triggerCopilotPR(
+                          issue.data.number, 
+                          suggestion, 
+                          url, 
+                          deviceType, 
+                          originalAuthor
+                        );
+                        
+                        if (copilotTriggered) {
+                          console.log(`🤖 Copilot automatically triggered for issue #${issue.data.number}`);
+                        }
+                      } else {
+                        console.log(`⚠️ Failed to assign Copilot to issue #${issue.data.number}, skipping PR trigger`);
                       }
                       
-                      // Add a delay between issues to avoid rate limiting
-                      await new Promise(resolve => setTimeout(resolve, 2000));
+                      // Add a longer delay between issues to avoid rate limiting and give Copilot time to process
+                      await new Promise(resolve => setTimeout(resolve, 5000));
                       
                     } catch (error) {
                       console.log(`❌ Failed to create issue for "${issueTitle}": ${error.message}`);
@@ -352,6 +494,32 @@ jobs:
               console.log('❌ Error in issue creation process:', error.message);
               throw error;
             }
+
+      - name: Handle Copilot Unavailable
+        if: steps.get_copilot_id.outputs.copilot_available != 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const comment = `## ❌ GitHub Copilot Coding Agent Not Available
+            
+            Unfortunately, the GitHub Copilot coding agent is not available in this repository. This could be because:
+            
+            - Copilot is not enabled for this repository
+            - The coding agent feature is not activated
+            - Repository permissions don't allow Copilot access
+            
+            **Manual Review Required**: CWV analysis completed but automatic PR creation is not possible.
+            
+            Please check your repository's Copilot settings or create the performance optimizations manually.`;
+            
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
       - name: Comment on PR with Created Issues and Auto-PRs
         if: steps.create_issues.outputs.result != '[]'
         uses: actions/github-script@v7
@@ -374,26 +542,27 @@ jobs:
             ### 🤖 What's Happening Automatically:
             - ✅ **Issues Created**: ${issueNumbers.length} specific performance optimizations identified  
             - 🔍 **Duplicates Filtered**: Removed duplicate suggestions from analysis files
-            - 🤖 **Copilot Triggered**: GitHub Copilot is now automatically creating PRs for each issue
+            - 🤖 **Copilot Assigned**: GitHub Copilot coding agent properly assigned to each issue
+            - 🚀 **PR Creation Triggered**: Copilot is now automatically creating PRs for each issue
             - 📊 **Metrics Analyzed**: LCP, CLS, and INP improvements calculated
             - 🎯 **Prioritized**: Issues ranked by impact and implementation effort
             - 📱 **Device-Specific**: Separate optimizations for mobile and desktop
             - 👤 **Auto-Assigned**: All generated PRs will be assigned to you (@${context.payload.pull_request.user.login})
             ### 📈 Expected Outcomes:
-            - **No manual intervention required** - PRs are being created automatically
+            - **Copilot Agent Properly Assigned** - Using correct GraphQL mutation
             - **Performance improvements** based on real Core Web Vitals data
             - **AEM-specific optimizations** targeting /scripts/, /styles/, /blocks/ directories
             - **Ready-to-merge PRs** with detailed implementation notes
-            ### 🔄 Next Steps (All Automatic):
+            ### 🔄 Next Steps (5-10 minutes per issue):
             1. 🤖 Copilot analyzes your codebase for each optimization
             2. 🔧 PRs are created with specific performance fixes
             3. 📝 PRs include before/after performance impact descriptions
             4. ✅ PRs are automatically assigned to you for review
             5. 🔗 Issues are linked to their corresponding PRs
             **Monitor the "Pull Requests" tab** to see the automated PRs as they're created!
+            ⏱️ *Each Copilot PR typically takes 5-10 minutes to be created*
             ---
-            🎉 **Fully automated Core Web Vitals optimization powered by GitHub Copilot**
-            ⏱️ *PRs should appear within the next few minutes*`;
+            🎉 **Fully automated Core Web Vitals optimization powered by GitHub Copilot**`;
             
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -401,6 +570,7 @@ jobs:
               repo: context.repo.repo,
               body: comment
             });
+
       - name: Upload Desktop Report
         uses: actions/upload-artifact@v4
         with:
@@ -414,14 +584,6 @@ jobs:
         with:
           name: mobile-report
           path: cwv-output/*.mobile.report.gpt4o.summary.md
-          if-no-files-found: warn
-          retention-days: 7
-
-      - name: Upload Suggestions JSON
-        uses: actions/upload-artifact@v4
-        with:
-          name: suggestions-json
-          path: cwv-output/*.suggestions.gpt4o.json
           if-no-files-found: warn
           retention-days: 7
 
