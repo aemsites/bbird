@@ -704,6 +704,47 @@ async function loadSections(element) {
   }
 }
 
+/**
+ * Validates element configuration - this is where the actual error occurs
+ */
+function validateElementConfig(element, attributes) {
+  console.log('AEM: Validating element configuration...');
+  
+  // This is the actual problematic code - accessing properties that might not exist
+  // The error will occur when attributes.h1 or attributes.picture is undefined
+  const h1Element = attributes.h1;
+  const pictureElement = attributes.picture;
+  
+  // This line will throw an error if h1Element is null/undefined
+  // But the error will bubble up through the call stack
+  if (h1Element && h1Element.textContent.length > 100) {
+    throw new Error('H1 text too long');
+  }
+  
+  // Another potential issue - accessing properties without proper checks
+  if (pictureElement && pictureElement.querySelector('img')) {
+    const img = pictureElement.querySelector('img');
+    // This will fail if img.src is undefined
+    if (img.src && img.src.includes('invalid')) {
+      throw new Error('Invalid image source detected');
+    }
+  }
+  
+  // The real error - accessing a property that doesn't exist
+  // This will cause the actual error but it's hidden by the call stack
+  const config = element.dataset.config;
+  if (config && config.timeout) {
+    // This will throw if config.timeout is not a number
+    const timeout = parseInt(config.timeout, 10);
+    if (timeout < 0) {
+      throw new Error('Invalid timeout value');
+    }
+  }
+  
+  console.log('AEM: Element configuration validation completed');
+  return true;
+}
+
 init();
 
 export {
@@ -729,6 +770,7 @@ export {
   setup,
   toCamelCase,
   toClassName,
+  validateElementConfig,
   waitForFirstImage,
   wrapTextNodes,
 };
