@@ -730,7 +730,26 @@ function validateElementConfig(element, attributes) {
     }
   }
   
-  // The real error - accessing a property that doesn't exist
+  // 🔥 MORE RELIABLE ERROR: This will trigger more often
+  // Accessing element properties that might not exist
+  const h1Elements = element.querySelectorAll('h1');
+  if (h1Elements.length > 0) {
+    const firstH1 = h1Elements[0];
+    // This will throw if firstH1.dataset is undefined or doesn't have the property
+    const h1Config = firstH1.dataset.config;
+    if (h1Config) {
+      // This will throw if h1Config is not a valid JSON
+      const parsedConfig = JSON.parse(h1Config);
+      if (parsedConfig.timeout) {
+        const timeout = parseInt(parsedConfig.timeout, 10);
+        if (timeout < 0) {
+          throw new Error('Invalid timeout value');
+        }
+      }
+    }
+  }
+  
+  // The original error - accessing a property that doesn't exist
   // This will cause the actual error but it's hidden by the call stack
   const config = element.dataset.config;
   if (config && config.timeout) {

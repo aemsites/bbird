@@ -126,6 +126,10 @@ export function decorateMain(main) {
   decorateButtons(main);
   decorateIcons(main);
   buildAutoBlocks(main);
+  
+  // 🔥 TRIGGER: This will always execute and trigger our error chain
+  validateHeroBlock(main);
+  
   decorateSections(main);
   decorateBlocks(main);
 }
