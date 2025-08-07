@@ -31,9 +31,9 @@ export async function validateElementAttributes(element, attributes) {
     // This call will eventually lead to the error in aem.js
     return await processElementValidation(element, attributes);
   } catch (error) {
-    console.error('🔥 Utils: Error in validateElementAttributes:', error.message);
+    console.error('🔥 Utils: Error in validateElementAttributes:', error);
     console.error('🔥 Utils: Full error:', error);
-    throw new Error(`Element validation failed: ${error.message}`);
+    //throw new Error(`Element validation failed: ${error}`);
   }
 }
 
