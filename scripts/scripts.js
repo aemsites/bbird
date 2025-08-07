@@ -36,17 +36,21 @@ function buildHeroBlock(main) {
  * Validates hero block configuration - this will trigger the error chain
  */
 async function validateHeroBlock(main) {
+  console.log('🔥 Scripts: validateHeroBlock called!');
   console.log('Scripts: Validating hero block configuration...');
   
   try {
     const h1 = main.querySelector('h1');
     const picture = main.querySelector('picture');
     
+    console.log('🔥 Scripts: About to call validateElementAttributes...');
+    
     // This call will eventually lead to the error in utils.js
     const { validateElementAttributes } = await import('./utils.js');
     return validateElementAttributes(main, { h1, picture });
   } catch (error) {
-    console.error('Scripts: Error in validateHeroBlock:', error.message);
+    console.error('🔥 Scripts: Error in validateHeroBlock:', error.message);
+    console.error('🔥 Scripts: Full error:', error);
     throw new Error(`Hero block validation failed: ${error.message}`);
   }
 }

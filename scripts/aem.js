@@ -708,56 +708,18 @@ async function loadSections(element) {
  * Validates element configuration - this is where the actual error occurs
  */
 function validateElementConfig(element, attributes) {
+  console.log('🔥 AEM: validateElementConfig called!');
   console.log('AEM: Validating element configuration...');
   
-  // This is the actual problematic code - accessing properties that might not exist
-  // The error will occur when attributes.h1 or attributes.picture is undefined
-  const h1Element = attributes.h1;
-  const pictureElement = attributes.picture;
+  // 🔥 GUARANTEED ERROR: This will always throw an error
+  // Accessing a property that definitely doesn't exist
+  const nonExistentProperty = element.nonExistentProperty;
   
-  // This line will throw an error if h1Element is null/undefined
-  // But the error will bubble up through the call stack
-  if (h1Element && h1Element.textContent.length > 100) {
-    throw new Error('H1 text too long');
-  }
+  console.log('🔥 AEM: About to cause error...');
   
-  // Another potential issue - accessing properties without proper checks
-  if (pictureElement && pictureElement.querySelector('img')) {
-    const img = pictureElement.querySelector('img');
-    // This will fail if img.src is undefined
-    if (img.src && img.src.includes('invalid')) {
-      throw new Error('Invalid image source detected');
-    }
-  }
-  
-  // 🔥 MORE RELIABLE ERROR: This will trigger more often
-  // Accessing element properties that might not exist
-  const h1Elements = element.querySelectorAll('h1');
-  if (h1Elements.length > 0) {
-    const firstH1 = h1Elements[0];
-    // This will throw if firstH1.dataset is undefined or doesn't have the property
-    const h1Config = firstH1.dataset.config;
-    if (h1Config) {
-      // This will throw if h1Config is not a valid JSON
-      const parsedConfig = JSON.parse(h1Config);
-      if (parsedConfig.timeout) {
-        const timeout = parseInt(parsedConfig.timeout, 10);
-        if (timeout < 0) {
-          throw new Error('Invalid timeout value');
-        }
-      }
-    }
-  }
-  
-  // The original error - accessing a property that doesn't exist
-  // This will cause the actual error but it's hidden by the call stack
-  const config = element.dataset.config;
-  if (config && config.timeout) {
-    // This will throw if config.timeout is not a number
-    const timeout = parseInt(config.timeout, 10);
-    if (timeout < 0) {
-      throw new Error('Invalid timeout value');
-    }
+  // This will throw an error because we're trying to call a method on undefined
+  if (nonExistentProperty.someMethod()) {
+    console.log('This will never execute');
   }
   
   console.log('AEM: Element configuration validation completed');
