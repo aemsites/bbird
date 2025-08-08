@@ -26,15 +26,15 @@ export default function createElement(tagName, attributes, ...children) {
 export async function validateElementAttributes(element, attributes) {
   console.log('🔥 Utils: validateElementAttributes called!');
   console.log('Utils: Validating element attributes...');
-  //try {
-  //  console.log('🔥 Utils: About to call processElementValidation...');
-    // This call will eventually lead to the error in aem.js
+  try {
+   console.log('🔥 Utils: About to call processElementValidation...');
+     //This call will eventually lead to the error in aem.js
     return await processElementValidation(element, attributes);
-  //} catch (error) {
+  } catch (error) {
   //  console.error('🔥 Utils: Error in validateElementAttributes:', error);
-  //  console.error('🔥 Utils: Full error:', error);
+    console.error('🔥 Utils: Full error:', error);
    // throw new Error(`Element validation failed: ${error}`);
-  //}
+  }
 }
 
 /**
