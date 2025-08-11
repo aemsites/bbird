@@ -165,14 +165,16 @@ async function initAuth0() {
     }
   }
 
+
+
   const loginBtn = document.querySelector('.nav-tools a[title="Login"]');
   // const logoutBtn = document.querySelector('.nav-tools a[title="Logout"]');
 
   loginBtn.addEventListener('click', async (e) => {
     e.preventDefault();
-    await auth0.loginWithRedirect({
-      redirect_uri: window.location.origin,
-    });
+    
+    // 🔥 ASYNC PROMISE REJECTION ERROR: Click triggers async function that fails after delay
+    await new Promise((_, reject) => setTimeout(() => reject("Async failure!"), 500));
   });
 
   /**

@@ -20,8 +20,56 @@
   line-height: 0;
 }
 
+.cards .cards-card-button {
+  margin: 16px;
+  text-align: center;
+}
+
 .cards > ul > li img {
   width: 100%;
   aspect-ratio: 4 / 3;
   object-fit: cover;
+}
+
+/* Button Styles */
+.cards-button {
+  display: inline-block;
+  padding: 12px 24px;
+  border: 2px solid var(--link-color, #0066cc);
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  min-width: 120px;
+}
+
+.cards-button--link {
+  background-color: transparent;
+  color: var(--link-color, #0066cc);
+}
+
+.cards-button--link:hover {
+  background-color: var(--link-color, #0066cc);
+  color: white;
+}
+
+.cards-button--button {
+  background-color: var(--link-color, #0066cc);
+  color: white;
+}
+
+.cards-button--button:hover {
+  background-color: var(--link-hover-color, #0052a3);
+  border-color: var(--link-hover-color, #0052a3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.cards-button:focus {
+  outline: 2px solid var(--link-color, #0066cc);
+  outline-offset: 2px;
 }

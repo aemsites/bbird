@@ -704,6 +704,28 @@ async function loadSections(element) {
   }
 }
 
+/**
+ * Validates element configuration - this is where the actual error occurs
+ */
+function validateElementConfig(element, attributes) {
+  console.log('🔥 AEM: validateElementConfig called!');
+  console.log('AEM: Validating element configuration...');
+  
+  // 🔥 GUARANTEED ERROR: This will always throw an error
+  // Accessing a property that definitely doesn't exist
+  const nonExistentProperty = element.nonExistentProperty;
+  
+  console.log('🔥 AEM: About to cause error...');
+  
+  // This will throw an error because we're trying to call a method on undefined
+  if (nonExistentProperty.someMethod()) {
+    console.log('This will never execute');
+  }
+  
+  console.log('AEM: Element configuration validation completed');
+  return true;
+}
+
 init();
 
 export {
@@ -729,6 +751,7 @@ export {
   setup,
   toCamelCase,
   toClassName,
+  validateElementConfig,
   waitForFirstImage,
   wrapTextNodes,
 };

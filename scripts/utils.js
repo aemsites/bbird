@@ -19,3 +19,31 @@ export default function createElement(tagName, attributes, ...children) {
   });
   return el;
 }
+
+/**
+ * Validates element attributes - this will call the problematic function
+ */
+export async function validateElementAttributes(element, attributes) {
+  console.log('🔥 Utils: validateElementAttributes called!');
+  console.log('Utils: Validating element attributes...');
+  try {
+   console.log('🔥 Utils: About to call processElementValidation...');
+     //This call will eventually lead to the error in aem.js
+    return await processElementValidation(element, attributes);
+  } catch (error) {
+  //  console.error('🔥 Utils: Error in validateElementAttributes:', error);
+    console.error('🔥 Utils: Full error:', error);
+   // throw new Error(`Element validation failed: ${error}`);
+  }
+}
+
+/**
+ * Processes element validation - calls the problematic function in aem.js
+ */
+async function processElementValidation(element, attributes) {
+  console.log('Utils: Processing element validation...');
+  
+  // Import and call the problematic function from aem.js
+  const { validateElementConfig } = await import('./aem.js');
+  return validateElementConfig(element, attributes);
+}

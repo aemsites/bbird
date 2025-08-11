@@ -1,99 +1,401 @@
-name: CWV PR Check
-
-on:
-  pull_request:
-    types: [opened, synchronize]
-
-permissions:
-  contents: write
-  pull-requests: write
-
-jobs:
-  run-cwv-check:
-    runs-on: ubuntu-latest
-    environment: cwv-check-env-junaid
-
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-
-      - name: Install CWV Agent
-        run: npm install --no-save git+https://github.com/ramboz/cwv-agent.git
-
-      - name: Print dummy secret for testing
-        env:
-          DUMMY: ${{ secrets.DUMMY_TEST_KEY }}
-        run: |
-          echo "Dummy key from secret: $DUMMY"
-
-      - name: Print dummy secret for testing
-        run: |
-          echo "Dummy key from secret: ${{ secrets.DUMMY_TEST_KEY }}"
 
 
-      - name: Build Preview URL
-        id: build_url
-        run: |
-          BRANCH=${{ github.head_ref }}
-          REPO=${{ github.event.repository.name }}
-          OWNER=${{ github.repository_owner }}
-          PREVIEW_URL="https://${BRANCH}--${REPO}--${OWNER}.aem.page"
-          echo "PREVIEW_URL=$PREVIEW_URL" >> $GITHUB_OUTPUT
+# name: CWV PR Check
 
-      - name: Run CWV Agent (Mobile & Desktop)
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
-          AZURE_OPENAI_API_DEPLOYMENT_NAME: ${{ secrets.AZURE_OPENAI_API_DEPLOYMENT_NAME }}
-          AZURE_OPENAI_API_INSTANCE_NAME: ${{ secrets.AZURE_OPENAI_API_INSTANCE_NAME }}
-          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
-          AZURE_OPENAI_API_VERSION: ${{ secrets.AZURE_OPENAI_API_VERSION }}
-          GOOGLE_PAGESPEED_INSIGHTS_API_KEY: ${{ secrets.GOOGLE_PAGESPEED_INSIGHTS_API_KEY }}
-          GOOGLE_CRUX_API_KEY: ${{ secrets.GOOGLE_CRUX_API_KEY }}
-          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "true"
-          PUPPETEER_EXECUTABLE_PATH: "/usr/bin/google-chrome"
-        run: |
-          echo "⚡ Using URL: ${{ steps.build_url.outputs.preview_url }}"
-          node node_modules/cwv-agent/index.js --action prompt --url ${{ steps.build_url.outputs.preview_url }} --device mobile --model gpt-4o
-          node node_modules/cwv-agent/index.js --action prompt --url ${{ steps.build_url.outputs.preview_url }} --device desktop --model gpt-4o
-          # Copy results to a top-level folder for uploading
-          mkdir -p cwv-output
-          cp node_modules/cwv-agent/.cache/*.report.gpt4o.summary.md cwv-output/
-          cp node_modules/cwv-agent/.cache/*.suggestions.gpt4o.json cwv-output/
+# on:
+#   pull_request:
+#     types: [opened, synchronize]
 
-      - name: Upload Desktop Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: desktop-report
-          path: cwv-output/*.desktop.report.gpt4o.summary.md
-          if-no-files-found: error
-          retention-days: 1
+# permissions:
+#   contents: write
+#   pull-requests: write
+#   issues: write
 
-      - name: Upload Mobile Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: mobile-report
-          path: cwv-output/*.mobile.report.gpt4o.summary.md
-          if-no-files-found: error
-          retention-days: 1
+# jobs:
+#   run-cwv-check:
+#     runs-on: ubuntu-latest
+#     environment: cwv-check-env-junaid
 
-      - name: Upload Suggestions JSON
-        uses: actions/upload-artifact@v4
-        with:
-          name: suggestions-json
-          path: cwv-output/*.suggestions.gpt4o.json
-          if-no-files-found: error
-          retention-days: 1
+#     steps:
+#       - name: Checkout repo
+#         uses: actions/checkout@v3
 
-      - name: Print project file tree (excluding node_modules)
-        run: |
-          sudo apt-get update && sudo apt-get install -y tree
-          echo "📁 Project structure (excluding node_modules):"
-          tree -L 3 -a -I 'node_modules'
+#       - name: Set up Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: '18'
+
+#       - name: Install CWV Agent
+#         run: npm install --no-save git+https://github.com/ramboz/cwv-agent.git
+
+#       - name: Extract URLs from PR Description
+#         id: extract_urls
+#         uses: actions/github-script@v7
+#         with:
+#           github-token: ${{ secrets.GITHUB_TOKEN }}
+#           result-encoding: string
+#           script: |
+#             const pr = await github.rest.pulls.get({
+#               owner: context.repo.owner,
+#               repo: context.repo.repo,
+#               pull_number: context.issue.number,
+#             });
+#             const body = pr.data.body || '';
+#             const urls = [...new Set((body.match(/https:\/\/[\w.-]+--[\w.-]+--[\w.-]+\.aem\.(page|live)\/[\S]*/g) || []))];
+#             if (!urls.length) {
+#               throw new Error('No valid AEM URLs found in PR description');
+#             }
+#             console.log(`Found URLs: ${urls.join(', ')}`);
+#             return JSON.stringify(urls);
+
+#       - name: Run CWV Agent for Each AEM URL
+#         env:
+#           GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+#           AZURE_OPENAI_API_DEPLOYMENT_NAME: ${{ secrets.AZURE_OPENAI_API_DEPLOYMENT_NAME }}
+#           AZURE_OPENAI_API_INSTANCE_NAME: ${{ secrets.AZURE_OPENAI_API_INSTANCE_NAME }}
+#           AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+#           AZURE_OPENAI_API_VERSION: ${{ secrets.AZURE_OPENAI_API_VERSION }}
+#           GOOGLE_PAGESPEED_INSIGHTS_API_KEY: ${{ secrets.GOOGLE_PAGESPEED_INSIGHTS_API_KEY }}
+#           GOOGLE_CRUX_API_KEY: ${{ secrets.GOOGLE_CRUX_API_KEY }}
+#           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "true"
+#           PUPPETEER_EXECUTABLE_PATH: "/usr/bin/google-chrome"
+#         run: |
+#           mkdir -p cwv-output
+#           echo "Running CWV audits for listed AEM URLs..."
+#           echo '${{ steps.extract_urls.outputs.result }}' | jq -r '.[]' | while read URL; do
+#             echo "Auditing $URL"
+#             node node_modules/cwv-agent/index.js --action prompt --url "$URL" --device mobile --model gpt-4o
+#             node node_modules/cwv-agent/index.js --action prompt --url "$URL" --device desktop --model gpt-4o
+#           done
+          
+#           # Copy output files to our directory
+#           if [ -d "node_modules/cwv-agent/.cache" ]; then
+#             cp node_modules/cwv-agent/.cache/*.report.gpt4o.summary.md cwv-output/ 2>/dev/null || echo "No summary reports found."
+#             cp node_modules/cwv-agent/.cache/*.suggestions.gpt4o.json cwv-output/ 2>/dev/null || echo "No suggestions found."
+#             ls -la cwv-output/
+#           else
+#             echo "Cache directory not found"
+#           fi
+
+#       - name: Create GitHub Issues for CWV Suggestions
+#         id: create_issues
+#         uses: actions/github-script@v7
+#         with:
+#           github-token: ${{ secrets.GITHUB_TOKEN }}
+#           script: |
+#             const fs = require('fs');
+#             const path = require('path');
+            
+#             const cwvOutputDir = 'cwv-output';
+#             const issueNumbers = [];
+#             const prNumber = context.issue.number;
+            
+#             // Helper function to create issue title with URL and device info
+#             function createIssueTitle(suggestion, url, deviceType) {
+#               const urlHost = new URL(url).hostname.split('.')[0];
+#               return `[CWV-${deviceType.toUpperCase()}] ${suggestion.title} - ${urlHost}`;
+#             }
+            
+#             // Helper function to create issue body
+#             function createIssueBody(suggestion, url, deviceType, prNumber) {
+#               return `## Core Web Vitals Performance Issue
+            
+#             **URL**: ${url}
+#             **Device**: ${deviceType}
+#             **Metric**: ${suggestion.metric}
+#             **Priority**: ${suggestion.priority}
+#             **Effort**: ${suggestion.effort}
+#             **Expected Impact**: ${suggestion.impact}
+#             **Category**: ${suggestion.category}
+            
+#             ## Description
+#             ${suggestion.description}
+            
+#             ## Implementation Details
+#             ${suggestion.implementation || 'No specific implementation details provided.'}
+            
+#             ${suggestion.codeExample ? `## Code Example\n\`\`\`\n${suggestion.codeExample}\n\`\`\`` : ''}
+            
+#             ---
+#             📝 **Auto-generated from PR #${prNumber}** | 🚀 **Ready for @github-copilot to implement**
+            
+#             @github-copilot please analyze this Core Web Vitals performance issue and implement the suggested optimizations. Focus on:
+#             1. Locating the relevant files in the codebase that affect ${suggestion.metric}
+#             2. Implementing the ${suggestion.category} optimizations described above
+#             3. Ensuring the changes align with the expected impact of ${suggestion.impact}
+#             4. Following best practices for ${suggestion.metric} optimization
+            
+#             The changes should target ${deviceType} performance and be implemented with ${suggestion.effort.toLowerCase()} effort as indicated.`;
+#             }
+            
+#             // Helper function to check for duplicate issues
+#             async function isDuplicateIssue(title) {
+#               try {
+#                 const issues = await github.rest.issues.listForRepo({
+#                   owner: context.repo.owner,
+#                   repo: context.repo.repo,
+#                   state: 'open',
+#                   per_page: 100,
+#                   labels: 'cwv-suggestion'
+#                 });
+                
+#                 return issues.data.some(issue => issue.title === title);
+#               } catch (error) {
+#                 console.log('Error checking for duplicates:', error.message);
+#                 return false;
+#               }
+#             }
+            
+#             try {
+#               // Check if output directory exists
+#               if (!fs.existsSync(cwvOutputDir)) {
+#                 console.log('❌ CWV output directory not found');
+#                 return [];
+#               }
+              
+#               // Process all suggestion files
+#               const suggestionFiles = fs.readdirSync(cwvOutputDir)
+#                 .filter(file => file.endsWith('.suggestions.gpt4o.json'));
+              
+#               console.log(`Found ${suggestionFiles.length} suggestion files`);
+              
+#               for (const filename of suggestionFiles) {
+#                 const filepath = path.join(cwvOutputDir, filename);
+                
+#                 try {
+#                   const content = fs.readFileSync(filepath, 'utf8');
+#                   const data = JSON.parse(content);
+                  
+#                   const url = data.url;
+#                   const deviceType = data.deviceType;
+#                   const suggestions = data.suggestions || [];
+                  
+#                   console.log(`Processing ${suggestions.length} suggestions for ${url} (${deviceType})`);
+                  
+#                   for (const suggestion of suggestions) {
+#                     const issueTitle = createIssueTitle(suggestion, url, deviceType);
+                    
+#                     // Check for duplicates
+#                     const isDuplicate = await isDuplicateIssue(issueTitle);
+#                     if (isDuplicate) {
+#                       console.log(`⚠️ Skipping duplicate issue: ${issueTitle}`);
+#                       continue;
+#                     }
+                    
+#                     const issueBody = createIssueBody(suggestion, url, deviceType, prNumber);
+#                     const labels = [
+#                       'cwv-suggestion',
+#                       `cwv-${suggestion.metric.toLowerCase()}`,
+#                       `priority-${suggestion.priority.toLowerCase()}`,
+#                       `device-${deviceType}`,
+#                       `category-${suggestion.category}`
+#                     ];
+                    
+#                     // Add GitHub Copilot assignment
+#                     const assignees = ['github-copilot'];
+                    
+#                     try {
+#                       const issue = await github.rest.issues.create({
+#                         owner: context.repo.owner,
+#                         repo: context.repo.repo,
+#                         title: issueTitle,
+#                         body: issueBody,
+#                         labels: labels,
+#                         assignees: assignees
+#                       });
+                      
+#                       issueNumbers.push(issue.data.number);
+#                       console.log(`✅ Created issue #${issue.data.number}: ${issueTitle}`);
+                      
+#                       // Add a small delay to avoid rate limiting
+#                       await new Promise(resolve => setTimeout(resolve, 100));
+                      
+#                     } catch (error) {
+#                       console.log(`❌ Failed to create issue for "${issueTitle}": ${error.message}`);
+#                     }
+#                   }
+#                 } catch (error) {
+#                   console.log(`❌ Failed to process file ${filename}: ${error.message}`);
+#                 }
+#               }
+              
+#               console.log(`\n📊 Summary: Created ${issueNumbers.length} issues`);
+#               return issueNumbers;
+              
+#             } catch (error) {
+#               console.log('❌ Error in issue creation process:', error.message);
+#               throw error;
+#             }
+
+#       - name: Comment on PR with Created Issues
+#         if: steps.create_issues.outputs.result != '[]'
+#         uses: actions/github-script@v7
+#         with:
+#           github-token: ${{ secrets.GITHUB_TOKEN }}
+#           script: |
+#             const issueNumbers = ${{ steps.create_issues.outputs.result }};
+            
+#             if (issueNumbers.length === 0) {
+#               console.log('No issues were created to comment about');
+#               return;
+#             }
+            
+#             const issueLinks = issueNumbers.map(num => `- #${num}`).join('\n');
+            
+#             const comment = `## 🚀 Core Web Vitals Analysis Complete
+            
+#             I've analyzed the performance of your AEM pages and created **${issueNumbers.length} optimization issues** with specific suggestions:
+            
+#             ${issueLinks}
+            
+#             ### What happens next?
+#             - 🤖 **GitHub Copilot** has been assigned to each issue and will automatically propose fixes
+#             - 📊 **Performance metrics** analyzed: LCP, CLS, and INP
+#             - 🎯 **Prioritized suggestions** based on impact and effort required
+#             - 📱 **Device-specific** optimizations for both mobile and desktop
+            
+#             Each issue includes:
+#             - Detailed implementation guidance
+#             - Expected performance impact
+#             - Code examples where applicable
+#             - Category-specific labels for easy filtering
+            
+#             Review the issues above and merge the auto-generated PRs from Copilot when you're ready! 🎉`;
+            
+#             await github.rest.issues.createComment({
+#               issue_number: context.issue.number,
+#               owner: context.repo.owner,
+#               repo: context.repo.repo,
+#               body: comment
+#             });
+
+#       - name: Upload Desktop Report
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: desktop-report
+#           path: cwv-output/*.desktop.report.gpt4o.summary.md
+#           if-no-files-found: warn
+#           retention-days: 7
+
+#       - name: Upload Mobile Report
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: mobile-report
+#           path: cwv-output/*.mobile.report.gpt4o.summary.md
+#           if-no-files-found: warn
+#           retention-days: 7
+
+#       - name: Upload Suggestions JSON
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: suggestions-json
+#           path: cwv-output/*.suggestions.gpt4o.json
+#           if-no-files-found: warn
+#           retention-days: 7
+
+#       - name: Print project file tree (excluding node_modules)
+#         if: always()
+#         run: |
+#           sudo apt-get update && sudo apt-get install -y tree
+#           echo "📁 Project structure (excluding node_modules):"
+#           tree -L 3 -a -I 'node_modules'
+
+# name: CWV PR Check
+
+# on:
+#   pull_request:
+#     types: [opened, synchronize]
+
+# permissions:
+#   contents: write
+#   pull-requests: write
+
+# jobs:
+#   run-cwv-check:
+#     runs-on: ubuntu-latest
+#     environment: cwv-check-env-junaid
+
+#     steps:
+#       - name: Checkout repo
+#         uses: actions/checkout@v3
+
+#       - name: Set up Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: '18'
+
+#       - name: Install CWV Agent
+#         run: npm install --no-save git+https://github.com/ramboz/cwv-agent.git
+
+#       - name: Print dummy secret for testing
+#         env:
+#           DUMMY: ${{ secrets.DUMMY_TEST_KEY }}
+#         run: |
+#           echo "Dummy key from secret: $DUMMY"
+
+#       - name: Print dummy secret for testing
+#         run: |
+#           echo "Dummy key from secret: ${{ secrets.DUMMY_TEST_KEY }}"
+
+
+#       - name: Build Preview URL
+#         id: build_url
+#         run: |
+#           BRANCH=${{ github.head_ref }}
+#           REPO=${{ github.event.repository.name }}
+#           OWNER=${{ github.repository_owner }}
+#           PREVIEW_URL="https://${BRANCH}--${REPO}--${OWNER}.aem.page"
+#           echo "PREVIEW_URL=$PREVIEW_URL" >> $GITHUB_OUTPUT
+
+#       - name: Run CWV Agent (Mobile & Desktop)
+#         env:
+#           GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+#           AZURE_OPENAI_API_DEPLOYMENT_NAME: ${{ secrets.AZURE_OPENAI_API_DEPLOYMENT_NAME }}
+#           AZURE_OPENAI_API_INSTANCE_NAME: ${{ secrets.AZURE_OPENAI_API_INSTANCE_NAME }}
+#           AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+#           AZURE_OPENAI_API_VERSION: ${{ secrets.AZURE_OPENAI_API_VERSION }}
+#           GOOGLE_PAGESPEED_INSIGHTS_API_KEY: ${{ secrets.GOOGLE_PAGESPEED_INSIGHTS_API_KEY }}
+#           GOOGLE_CRUX_API_KEY: ${{ secrets.GOOGLE_CRUX_API_KEY }}
+#           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "true"
+#           PUPPETEER_EXECUTABLE_PATH: "/usr/bin/google-chrome"
+#         run: |
+#           echo "⚡ Using URL: ${{ steps.build_url.outputs.preview_url }}"
+#           node node_modules/cwv-agent/index.js --action prompt --url ${{ steps.build_url.outputs.preview_url }} --device mobile --model gpt-4o
+#           node node_modules/cwv-agent/index.js --action prompt --url ${{ steps.build_url.outputs.preview_url }} --device desktop --model gpt-4o
+#           # Copy results to a top-level folder for uploading
+#           mkdir -p cwv-output
+#           cp node_modules/cwv-agent/.cache/*.report.gpt4o.summary.md cwv-output/
+#           cp node_modules/cwv-agent/.cache/*.suggestions.gpt4o.json cwv-output/
+
+#       - name: Upload Desktop Report
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: desktop-report
+#           path: cwv-output/*.desktop.report.gpt4o.summary.md
+#           if-no-files-found: error
+#           retention-days: 1
+
+#       - name: Upload Mobile Report
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: mobile-report
+#           path: cwv-output/*.mobile.report.gpt4o.summary.md
+#           if-no-files-found: error
+#           retention-days: 1
+
+#       - name: Upload Suggestions JSON
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: suggestions-json
+#           path: cwv-output/*.suggestions.gpt4o.json
+#           if-no-files-found: error
+#           retention-days: 1
+
+#       - name: Print project file tree (excluding node_modules)
+#         run: |
+#           sudo apt-get update && sudo apt-get install -y tree
+#           echo "📁 Project structure (excluding node_modules):"
+#           tree -L 3 -a -I 'node_modules'
 
 
 # name: CWV PR Check
@@ -169,6 +471,10 @@ jobs:
 
 
 ############
+# In addition :
+#Published CWV Reports to GitHub Pages: Uploads CWV .md and .json reports to the gh-pages branch so they’re publicly accessible as static files.
+#Log GitHub Pages Report Links in Workflow: Dynamically constructs the exact URLs for each uploaded file and prints them in the workflow logs for easy copy-paste access.
+
       # - name: Publish CWV Reports to GitHub Pages
       #   if: github.event_name == 'pull_request'
       #   env:

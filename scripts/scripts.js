@@ -33,6 +33,29 @@ function buildHeroBlock(main) {
 }
 
 /**
+ * Validates hero block configuration - this will trigger the error chain
+ */
+async function validateHeroBlock(main) {
+  console.log('🔥 Scripts: validateHeroBlock called!');
+  console.log('Scripts: Validating hero block configuration...');
+  
+  try {
+    const h1 = main.querySelector('h1');
+    const picture = main.querySelector('picture');
+    
+    console.log('🔥 Scripts: About to call validateElementAttributes...');
+    
+    // This call will eventually lead to the error in utils.js
+    const { validateElementAttributes } = await import('./utils.js');
+    return validateElementAttributes(main, { h1, picture });
+  } catch (error) {
+    console.error('🔥 Scripts: Error in validateHeroBlock:', error.message);
+    console.error('🔥 Scripts: Full error:', error);
+    throw new Error(`Hero block validation failed: ${error.message}`);
+  }
+}
+
+/**
  * load fonts.css and set a session storage flag
  */
 async function loadFonts() {
@@ -51,6 +74,8 @@ async function loadFonts() {
 function buildAutoBlocks(main) {
   try {
     buildHeroBlock(main);
+    // This will trigger the error chain
+    validateHeroBlock(main);
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error('Auto Blocking failed', error);
@@ -105,6 +130,10 @@ export function decorateMain(main) {
   decorateButtons(main);
   decorateIcons(main);
   buildAutoBlocks(main);
+  
+  // 🔥 TRIGGER: This will always execute and trigger our error chain
+  validateHeroBlock(main);
+  
   decorateSections(main);
   decorateBlocks(main);
 }
