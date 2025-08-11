@@ -16,7 +16,7 @@ export default function decorate(block) {
   ul.querySelectorAll('picture > img').forEach((img) => img.closest('picture').replaceWith(createOptimizedPicture(img.src, img.alt, false, [{ width: '750' }])));
   
   // Add button functionality and error triggers
-  ul.querySelectorAll('.cards-card-button a, .cards-card-button button').forEach((button, index) => {
+  ul.querySelectorAll('.cards-card-button .button-container a').forEach((button, index) => {
     if (button.tagName === 'A') {
       button.className = 'cards-button cards-button--link';
     } else if (button.tagName === 'BUTTON') {
@@ -28,58 +28,64 @@ export default function decorate(block) {
       e.preventDefault();
       e.stopPropagation();
       
-      // Create different errors for each button
-      const errorTypes = [
-        // Button 1: Reference Error (undefined variable)
-        () => {
-          console.error('🔥 Button1 Error: Reference Error - Undefined variable');
-          const undefinedVariable = nonExistentVariable.someMethod();
-        },
-        
-        // Button 2: Type Error (calling method on null)
-        () => {
-          console.error('🔥 Button2 Error: Type Error - Calling method on null');
-          const nullObject = null;
-          nullObject.doSomething();
-        },
-        
-        // Button 3: Range Error (invalid array length)
-        () => {
-          console.error('🔥 Button3 Error: Range Error - Invalid array length');
-          const arr = new Array(-1);
-        },
-        
-        // Button 4: Syntax Error (eval with invalid code)
-        () => {
-          console.error('🔥 Button4 Error: Syntax Error - Invalid JavaScript code');
-          eval('function invalid syntax {');
-        },
-        
-        // Button 5: URI Error (invalid URL)
-        () => {
-          console.error('🔥 Button5 Error: URI Error - Invalid URL encoding');
-          decodeURIComponent('%');
-        },
-        
-        // Button 6: Custom Error with stack trace
-        () => {
-          console.error('🔥 Button6 Error: Custom Error with detailed stack trace');
-          throw new Error('Button6 triggered a custom error with full stack trace information');
-        },
-        
-        // Button 7: Async Error (Promise rejection)
-        () => {
-          console.error('🔥 Button7 Error: Async Promise Rejection');
-          new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Button7 async operation failed')), 100);
-          });
-        }
-      ];
+      // Get the button title to identify which button was clicked
+      const buttonTitle = button.getAttribute('title') || `Button${index + 1}`;
+      console.log(`🔥 ${buttonTitle} clicked!`);
       
-      // Execute the appropriate error based on button index
-      const errorIndex = index % errorTypes.length;
+      // Create different errors for each button based on title
+      const getErrorFunction = (title) => {
+        switch (title) {
+          case 'Button1':
+            return () => {
+              console.error('🔥 Button1 Error: Reference Error - Undefined variable');
+              const undefinedVariable = nonExistentVariable.someMethod();
+            };
+          
+          case 'Button2':
+            return () => {
+              console.error('🔥 Button2 Error: Type Error - Calling method on null');
+              const nullObject = null;
+              nullObject.doSomething();
+            };
+          
+          case 'Button3':
+            return () => {
+              console.error('🔥 Button3 Error: Range Error - Invalid array length');
+              const arr = new Array(-1);
+            };
+          
+          case 'Button34':
+            return () => {
+              console.error('🔥 Button34 Error: Syntax Error - Invalid JavaScript code');
+              eval('function invalid syntax {');
+            };
+          
+          case 'Button6':
+            return () => {
+              console.error('🔥 Button6 Error: URI Error - Invalid URL encoding');
+              decodeURIComponent('%');
+            };
+          
+          case 'Button69':
+            return () => {
+              console.error('🔥 Button69 Error: Custom Error with detailed stack trace');
+              throw new Error('Button69 triggered a custom error with full stack trace information');
+            };
+          
+          default:
+            return () => {
+              console.error(`🔥 ${buttonTitle} Error: Async Promise Rejection`);
+              new Promise((_, reject) => {
+                setTimeout(() => reject(new Error(`${buttonTitle} async operation failed`)), 100);
+              });
+            };
+        }
+      };
+      
+      // Execute the appropriate error based on button title
       try {
-        errorTypes[errorIndex]();
+        const errorFunction = getErrorFunction(buttonTitle);
+        errorFunction();
       } catch (error) {
         // Log the full error details
         console.error('🔥 Full Error Details:', error);
