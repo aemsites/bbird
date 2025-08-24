@@ -7,3 +7,7 @@ helix-importer-ui
 .DS_Store
 *.bak
 .idea
+
+# Load Testing
+load-testing/node_modules/
+load-testing/results/
